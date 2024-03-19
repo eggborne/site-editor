@@ -1,0 +1,30 @@
+#root {
+  width: 100dvw;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
+}
+
+header, footer {
+  background: rgb(72, 8, 8);
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+header {
+  height: 4rem;
+}
+
+footer {
+  height: 2rem;
+}
+
+main {
+  flex-grow: 1;
+  background-color: rgb(45, 45, 33);
+  padding: 1rem;
+}
