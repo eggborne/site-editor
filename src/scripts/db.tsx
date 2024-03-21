@@ -13,6 +13,8 @@ type CSSPreferences = {
   '--main-padding-horiz': string;
   '--header-padding-vert': string;
   '--header-padding-horiz': string;
+  '--nav-padding-vert': string,
+  '--nav-padding-horiz': string,
   '--nav-text-shadow': string;
   '--hamburger-size': string;
   '--hamburger-animation-duration': string;
@@ -34,6 +36,8 @@ export const defaultCSSPreferences: CSSPreferences = {
   '--main-padding-horiz': '1rem',
   '--header-padding-vert': '1rem',
   '--header-padding-horiz': '0.325rem',
+  '--nav-padding-vert': '1rem',
+  '--nav-padding-horiz': '1rem',
   '--nav-text-shadow': '0.1rem 0.05rem 0.25rem rgb(0, 0, 0, 0.5)',
   '--hamburger-size': 'calc(var(--header-height) * 0.85)',
   '--hamburger-animation-duration': '200ms',
@@ -52,7 +56,7 @@ export const getCurrentCSSValues = () => {
   return newValuesObj;
 }
 
-export const applyCSSValues = (newValuesObj: Record<string, string>) => {
+export const applyCSSValues = (newValuesObj: CSSPreferences) => {
   for (let [attributeName, newValue] of Object.entries(newValuesObj)) {
     document.documentElement.style.setProperty(attributeName, newValue);
   }
@@ -64,7 +68,7 @@ export const getUserPreferences = async (prefID: string) => {
     method: 'post',
     url: `https://rockyrachel.art/php/getpreferences.php`,
     data: {
-      userID: parseInt(prefID)
+      userID: parseInt(prefID),
     }
   });
   if (response.data) {

@@ -20,10 +20,6 @@ header {
   height: 4rem;
 }
 
-footer {
-  
-}
-
 main {
   flex-grow: 1;
   background-color: rgb(45, 45, 33);

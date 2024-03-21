@@ -11,7 +11,7 @@ function App() {
 
   useEffect(() => {
     async function getPrefs() {
-      const initialValues = await getUserPreferences('2');
+      const initialValues = await getUserPreferences('1');
       setCurrentValues(initialValues);
     }
     getPrefs();
