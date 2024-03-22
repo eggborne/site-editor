@@ -12,6 +12,8 @@
   "dependencies": {
     "@types/react-color": "^3.0.12",
     "axios": "^1.6.8",
+    "firebase": "^10.9.0",
+    "firebaseui": "^6.1.0",
     "normalize.css": "^8.0.1",
     "react": "^18.2.0",
     "react-color": "^2.17.3",

@@ -5,38 +5,3 @@
 .color-picker * { 
   pointer-events: all;
 }
-
-.slider-picker {
-  height: 5rem;
-  display: flex;
-  flex-direction: column;
-}
-
-.slider-picker > div {
-  flex-grow: 1;
-  min-height: 2rem;
-}
-
-.slider-picker > div:first-child > div > div > div {
-  height: 3rem !important;
-  width: 3rem !important;
-}
-.slider-picker > div:last-child > div {
-  height: 3rem;
-  display: flex;
-  align-items: center;
-}
-
-.slider-picker .hue-horizontal {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-}
-
-.slider-picker .hue-horizontal > div {
-  top: -0.5rem;
-}
-
-.color-picker > .slider-picker .hue-horizontal > div > div {
-  height: 3rem !important;
-}

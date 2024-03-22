@@ -1,0 +1,8 @@
+.login-screen { 
+  position: fixed;
+  min-width: 20rem;
+  max-width: 90dvw;
+  /* background: #000044; */
+  padding: 1rem;
+  outline: 2px solid #ffffff77;
+}

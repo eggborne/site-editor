@@ -1,3 +1,4 @@
+
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -44,12 +45,13 @@ button {
   font-family: inherit;
   background-color: #55e65c;
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: all 250ms ease;
   margin: 1rem !important;
 }
 
 button:hover {
   border-color: #646cff;
+  filter: saturate(2);
 }
 
 button:focus,
