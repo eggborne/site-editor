@@ -2,7 +2,22 @@
   position: fixed;
   min-width: 20rem;
   max-width: 90dvw;
-  /* background: #000044; */
+  width: 90vmin;
+  height: auto;
+  background: #440044;
   padding: 1rem;
   outline: 2px solid #ffffff77;
+  display: none;
+}
+
+.login-screen.visible {
+  display: block;
+}
+
+#firebaseui-auth-container {
+  display: none;
+}
+
+.login-screen.visible #firebaseui-auth-container {
+  display: block;
 }
