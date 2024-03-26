@@ -1,5 +1,4 @@
 import './LoginScreen.css';
-import { useEffect } from 'react';
 
 interface LoginScreenProps {
   visible: boolean;

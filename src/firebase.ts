@@ -26,59 +26,102 @@ const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const database = getDatabase(firebaseApp);
 
-
 const ui = new firebaseui.auth.AuthUI(auth);
 
-ui.start('#firebaseui-auth-container', {
-  signInOptions: [
-    {
-      provider: EmailAuthProvider.PROVIDER_ID,
-      // Use email/password auth and not email link auth.
-      signInMethod: EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD,
+const startUI = () => {
+  ui.start('#firebaseui-auth-container', {
+    signInFlow: 'popup',
+    signInOptions: [
+      {
+        provider: EmailAuthProvider.PROVIDER_ID,
+        signInMethod: EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD,
+      },
+      GoogleAuthProvider.PROVIDER_ID,
+      GithubAuthProvider.PROVIDER_ID,
+    ],
+    callbacks: {
+      signInSuccessWithAuthResult: (authResult, redirectUrl) => {
+        console.log('Auth result:', authResult);
+        console.log('Redirect URL:', redirectUrl);
+        return false; // Return false to prevent automatic redirect.
+      },
+      uiShown: () => {
+        console.warn('----- UI RENDERED ---------');
+        // The UI has been rendered.
+      }
     },
-    GoogleAuthProvider.PROVIDER_ID,
-    GithubAuthProvider.PROVIDER_ID,
-  ],
-  signInFlow: 'popup',
-  callbacks: {
-    signInSuccessWithAuthResult: (authResult, redirectUrl) => {
-      // Handle the sign-in success.
-      console.log('Auth result:', authResult);
-      console.log('Redirect URL:', redirectUrl);
-      return false; // Return false to prevent automatic redirect.
-    },
-    uiShown: () => {
-      console.warn('----- UI RENDERED ---------');
-      // The UI has been rendered.
-    }
-  },
-  tosUrl: '/',
-  // Privacy policy url.
-  privacyPolicyUrl: '/',
-  // Other config options...
-});
-
-const writeUserPreferences = (userId: string, newPreferencesObj: object) => {
-  set(ref(database, 'preferences/' + userId), newPreferencesObj);
+    tosUrl: '/',
+    // Privacy policy url.
+    privacyPolicyUrl: '/',
+    // Other config options...
+  });
 }
 
-const getUserPreferences = async (userId: string) => {
+const resetUI = () => {
+  ui.reset();
+  startUI();
+}
+
+const writeUserSitePreferences = (userId: string, siteId: string, newPreferencesObj: object) => {
+  set(ref(database, `preferences/${userId}/${siteId}`), newPreferencesObj);
+}
+
+const getUserSiteList = async (userId: string) => {
   const dbRef = ref(getDatabase());
-  const snapshot = await get(child(dbRef, `preferences/${userId}`));
+  const snapshot = await get(child(dbRef, `clients/${userId}/sites`));
   if (snapshot.exists()) {
     return snapshot.val();
   } else {
-    console.log("No data available");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> No user site data available");
+    return null;
+  }
+}
+
+const getUserSitePreferences = async (userId: string, siteId: string) => {
+  const dbRef = ref(getDatabase());
+  const snapshot = await get(child(dbRef, `preferences/${userId}/${siteId}`));
+  if (snapshot.exists()) {
+    return snapshot.val();
+  } else {
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> No user preference data available");
     return null;
   }
 }
 
 // const analytics = getAnalytics(firebaseApp);
 
+window.addEventListener('DOMContentLoaded', startUI);
+
+const obj = {
+  "--footer-height": "1.75rem",
+  "--hamburger-animation-duration": "200ms",
+  "--hamburger-size": "calc(var(--header-height) * 0.85)",
+  "--header-bg-color": "#3f3f2f",
+  "--header-height": "4rem",
+  "--header-padding-horiz": "0.325rem",
+  "--header-padding-vert": "1rem",
+  "--main-bg-color": "red",
+  "--main-font-color": "#ffffffde",
+  "--main-padding-horiz": "1rem",
+  "--main-padding-vert": "1rem",
+  "--nav-area-bg-color": "#7f8472",
+  "--nav-area-font": "Helvetica",
+  "--nav-area-font-color": "beige",
+  "--nav-area-font-size": "1rem",
+  "--nav-padding-horiz": "1rem",
+  "--nav-padding-vert": "1rem",
+  "--nav-text-shadow": "0.1rem 0.05rem 0.25rem #00000080",
+  "--text-accent-color": "yellow",
+  "--title-font": "Helvetica",
+}
+
 export {
   auth,
   database,
+  getUserSiteList,
+  writeUserSitePreferences,
+  getUserSitePreferences,
+  startUI,
+  resetUI,
   // analytics,
-  writeUserPreferences,
-  getUserPreferences
 };

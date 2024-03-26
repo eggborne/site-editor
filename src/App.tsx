@@ -1,92 +1,124 @@
-import { useEffect, useState } from 'react'
-import './App.css'
+import { useEffect, useState } from 'react';
+import './App.css';
 import LoginScreen from './components/LoginScreen';
-import { auth, getUserPreferences, writeUserPreferences } from './firebase';
+import { auth, getUserSiteList, getUserSitePreferences, resetUI, startUI, writeUserSitePreferences } from './firebase';
 import { User, signOut } from 'firebase/auth';
 
 function App() {
 
   const [ready, setReady] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [currentToken, setCurrentToken] = useState('');
+  const [siteList, setSiteList] = useState([]);
+  const [currentSite, setCurrentSite] = useState('');
   const [currentCSSValues, setCurrentCSSValues] = useState({});
 
   const init = () => {
+
     auth.onAuthStateChanged(async (user: User | null) => {
-      console.error('AUTH STATE CHANGED!')
+      console.warn('AUTH STATE CHANGED! ---------------------->')
       if (user) {
         console.warn('-------> USER SIGNED IN!', user);
-        const accessToken = await user.getIdToken();
+        // const newSignUp = user.metadata.creationTime === user.metadata.lastSignInTime;
+
         setCurrentUser(user);
-        setCurrentToken(accessToken);
-        const nextPrefs = await getUserPreferences(user.uid);
-        console.log('got nextPrefs', nextPrefs);
-        setCurrentCSSValues(nextPrefs);
+        const sites = await getUserSiteList(user.uid);
+        console.log('sites?', sites);
+        setSiteList(sites);
+        // const nextPrefs = await getUserSitePreferences(user.uid);
+        // console.log('got nextPrefs', nextPrefs);
+        // setCurrentCSSValues(nextPrefs);
+        if (!ready) {
+          setReady(true);
+        }
       } else {
-        setCurrentUser(null);
-        setCurrentToken('');
-        console.error('USER SIGNED OUT');
+        console.error('USER IS NOT SIGNED IN');
       }
-      if (!ready) {
-        setReady(true);
-      }
-      
+      setReady(true);
+
     }, function (error) {
       console.log(error);
     });
   };
 
   const handleClickSave = () => {
-    console.log('clicked SAVE');
-    // if (currentUser) {
-    //   writeUserPreferences(currentUser.uid, currentCSSValues);
-    // }
+    if (currentUser) {
+      writeUserSitePreferences(currentUser.uid, currentSite, currentCSSValues);
+      console.log('clicked SAVE');
+    }
   }
 
   const signUserOut = async () => {
-    const result = await signOut(auth);
     setCurrentUser(null);
-    setCurrentToken('');
-    setReady(false);
-    // location.reload();
-    console.warn('SIGNED OUT result:', result);
+    await signOut(auth);
+    resetUI();
+  }
+
+  const handleClickSite = (e: any) => {
+    console.log('clicked site', e.target.textContent);
+    setCurrentSite(e.target.textContent);
   }
 
   useEffect(() => {
     init();
   }, []);
 
+  useEffect(() => {
+
+    async function getPrefs() {
+      if (currentUser && currentUser.uid && currentSite) {
+        const prefs = await getUserSitePreferences(currentUser.uid, currentSite);
+        console.log('got prefs', prefs);
+        setLoading(false);
+      }
+    }
+
+    getPrefs();
+  }, [currentSite]);
+
   return (
     <>
       <header>
         <h1>Site Editor 🐪</h1>
         <div className='user-info'>
-          {true ?
+          {ready ?
             currentUser &&
-              <div>
-                Logged in as {currentUser.displayName}
-                <button onClick={signUserOut} type='button' className='sign-out-button'>Sign Out</button>
-              </div>
+            <div>
+              Logged in as {currentUser.displayName || currentUser.email}
+              <button onClick={signUserOut} type='button' className='sign-out-button'>Sign Out</button>
+            </div>
             :
             <div>loading...</div>
           }
         </div>
       </header>
       <main>
-        {true ?
-          !currentUser ?
-            <LoginScreen visible={ready} />
-          :
-          currentToken &&
-            <div className='adjustment-area'>
-              {currentUser.displayName} ({currentUser.email}) is logged in now
-              </div>
+        {ready ?
+          currentUser &&
+          <div className='adjustment-area'>
+            <p>{currentUser.displayName} ({currentUser.email}) is logged in now</p>
+            {!currentSite ?
+              <>
+                <div>Choose a site:</div>
+                <div>
+                  {siteList.map(site => {
+                    return <button key={site} onClick={handleClickSite}>{site}</button>;
+                  })}
+                </div>
+              </>
+              :
+              !loading ? <div>selected site: {currentSite}</div> : <div>loading...</div>
+            }
+          </div>
           :
           <div>loading...</div>
         }
+        {!currentUser &&
+          <LoginScreen visible={ready} />
+        }
       </main>
       <footer>
-        <button onClick={handleClickSave} type='button'>SAVE IT FOR REAL</button>
+        {currentUser && <button onClick={handleClickSave} type='button'>SAVE IT FOR REAL</button>}
       </footer>
     </>
   )
