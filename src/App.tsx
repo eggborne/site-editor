@@ -3,6 +3,36 @@ import './App.css';
 import LoginScreen from './components/LoginScreen';
 import { auth, getUserSiteList, getUserSitePreferences, resetUI, startUI, writeUserSitePreferences } from './firebase';
 import { User, signOut } from 'firebase/auth';
+import Header from './components/Header';
+import InputList from './components/InputList';
+
+window.addEventListener('DOMContentLoaded', startUI);
+
+export interface CSSPropertiesState {
+  '--footer-height': string;
+  '--hamburger-animation-duration': string;
+  '--hamburger-size': string;
+  '--header-bg-color': string;
+  '--header-height': string;
+  '--header-padding-horiz': string;
+  '--header-padding-vert': string;
+  '--main-bg-color': string;
+  '--main-font-color': string;
+  '--main-padding-horiz': string;
+  '--main-padding-vert': string;
+  '--nav-area-bg-color': string;
+  '--nav-area-font': string;
+  '--nav-area-font-color': string;
+  '--nav-area-font-size': string;
+  '--nav-padding-horiz': string;
+  '--nav-padding-vert': string;
+  '--nav-text-shadow-x': string;
+  '--nav-text-shadow-y': string;
+  '--nav-text-shadow-blur': string;
+  '--nav-text-shadow-color': string;
+  '--text-accent-color': string;
+  '--title-font': string;
+}
 
 function App() {
 
@@ -10,8 +40,8 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [siteList, setSiteList] = useState([]);
-  const [currentSite, setCurrentSite] = useState('');
-  const [currentCSSValues, setCurrentCSSValues] = useState({});
+  const [currentSite, setCurrentSite] = useState({ siteId: '', siteName: '', siteUrl: '' });
+  const [currentCSSValues, setCurrentCSSValues] = useState({} as CSSPropertiesState);
 
   const init = () => {
 
@@ -22,12 +52,15 @@ function App() {
         // const newSignUp = user.metadata.creationTime === user.metadata.lastSignInTime;
 
         setCurrentUser(user);
-        const sites = await getUserSiteList(user.uid);
-        console.log('sites?', sites);
-        setSiteList(sites);
-        // const nextPrefs = await getUserSitePreferences(user.uid);
-        // console.log('got nextPrefs', nextPrefs);
-        // setCurrentCSSValues(nextPrefs);
+        let sites = await getUserSiteList(user.uid);
+        const nextSiteList: Array<any> = new Array();
+        for (let site in sites) {
+          const siteObj = sites[site];
+          siteObj.siteId = site;
+          console.log('siteObj?', siteObj);
+          nextSiteList.push(siteObj);
+        }
+        setSiteList(nextSiteList as any);
         if (!ready) {
           setReady(true);
         }
@@ -43,8 +76,7 @@ function App() {
 
   const handleClickSave = () => {
     if (currentUser) {
-      writeUserSitePreferences(currentUser.uid, currentSite, currentCSSValues);
-      console.log('clicked SAVE');
+      writeUserSitePreferences(currentSite.siteId, currentCSSValues, 'test');
     }
   }
 
@@ -55,8 +87,14 @@ function App() {
   }
 
   const handleClickSite = (e: any) => {
-    console.log('clicked site', e.target.textContent);
-    setCurrentSite(e.target.textContent);
+    const nextSite: any = siteList.find((site: any) => site.siteId === e.target.id);
+    setCurrentSite(nextSite);
+  }
+
+  const handleChangeProperty = (name: string, value: string) => {
+    const nextCSSValues = { ...currentCSSValues, [name]: value };
+    setCurrentCSSValues(nextCSSValues);
+
   }
 
   useEffect(() => {
@@ -67,8 +105,9 @@ function App() {
 
     async function getPrefs() {
       if (currentUser && currentUser.uid && currentSite) {
-        const prefs = await getUserSitePreferences(currentUser.uid, currentSite);
+        const prefs = await getUserSitePreferences(currentSite.siteId);
         console.log('got prefs', prefs);
+        setCurrentCSSValues(prefs);
         setLoading(false);
       }
     }
@@ -78,40 +117,32 @@ function App() {
 
   return (
     <>
-      <header>
-        <h1>Site Editor 🐪</h1>
-        <div className='user-info'>
-          {ready ?
-            currentUser &&
-            <div>
-              Logged in as {currentUser.displayName || currentUser.email}
-              <button onClick={signUserOut} type='button' className='sign-out-button'>Sign Out</button>
-            </div>
-            :
-            <div>loading...</div>
-          }
-        </div>
-      </header>
+      <Header ready={ready} currentUser={currentUser} signUserOut={signUserOut} />
       <main>
         {ready ?
           currentUser &&
           <div className='adjustment-area'>
-            <p>{currentUser.displayName} ({currentUser.email}) is logged in now</p>
-            {!currentSite ?
+            {!currentSite.siteId ?
               <>
                 <div>Choose a site:</div>
                 <div>
-                  {siteList.map(site => {
-                    return <button key={site} onClick={handleClickSite}>{site}</button>;
+                  {siteList.map((site: any) => {
+                    return <button key={site.siteId} id={site.siteId} onClick={handleClickSite}>{site.siteUrl}</button>;
                   })}
                 </div>
               </>
               :
-              !loading ? <div>selected site: {currentSite}</div> : <div>loading...</div>
+                !loading ?
+                  <>
+                    <h3><a href={`${currentSite.siteUrl}?live`} target='_blank' rel='noopener noreferrer'>{currentSite.siteUrl}?live</a></h3>
+                    <InputList cssProperties={currentCSSValues} handleChangeProperty={handleChangeProperty} />
+                  </>
+                  :
+                  <div>loading...</div>
             }
           </div>
           :
-          <div>loading...</div>
+          <div>loading</div>
         }
         {!currentUser &&
           <LoginScreen visible={ready} />

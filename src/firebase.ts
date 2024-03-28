@@ -51,9 +51,7 @@ const startUI = () => {
       }
     },
     tosUrl: '/',
-    // Privacy policy url.
     privacyPolicyUrl: '/',
-    // Other config options...
   });
 }
 
@@ -62,8 +60,12 @@ const resetUI = () => {
   startUI();
 }
 
-const writeUserSitePreferences = (userId: string, siteId: string, newPreferencesObj: object) => {
-  set(ref(database, `preferences/${userId}/${siteId}`), newPreferencesObj);
+const writeUserSitePreferences = (siteId: string, newPreferencesObj: object, type: string) => {
+  set(ref(database, `preferences/${siteId}/${type}`), newPreferencesObj);
+}
+
+const writeUserSiteAttribute = (userId: string, siteId: string, newAttributeKey: string, newAttributeValue: string ) => {
+  set(ref(database, `preferences/${userId}/${siteId}/${newAttributeKey}`), newAttributeValue);
 }
 
 const getUserSiteList = async (userId: string) => {
@@ -77,9 +79,13 @@ const getUserSiteList = async (userId: string) => {
   }
 }
 
-const getUserSitePreferences = async (userId: string, siteId: string) => {
+const setSiteForUser = (userId: string, siteId: string) => {
+  set(ref(database, `clients/${userId}/sites`), ['13467d21-a3a5-4ba5-88b3-ce98be547f90']);
+}
+
+const getUserSitePreferences = async (siteId: string) => {
   const dbRef = ref(getDatabase());
-  const snapshot = await get(child(dbRef, `preferences/${userId}/${siteId}`));
+  const snapshot = await get(child(dbRef, `preferences/${siteId}/test`));
   if (snapshot.exists()) {
     return snapshot.val();
   } else {
@@ -90,36 +96,12 @@ const getUserSitePreferences = async (userId: string, siteId: string) => {
 
 // const analytics = getAnalytics(firebaseApp);
 
-window.addEventListener('DOMContentLoaded', startUI);
-
-const obj = {
-  "--footer-height": "1.75rem",
-  "--hamburger-animation-duration": "200ms",
-  "--hamburger-size": "calc(var(--header-height) * 0.85)",
-  "--header-bg-color": "#3f3f2f",
-  "--header-height": "4rem",
-  "--header-padding-horiz": "0.325rem",
-  "--header-padding-vert": "1rem",
-  "--main-bg-color": "red",
-  "--main-font-color": "#ffffffde",
-  "--main-padding-horiz": "1rem",
-  "--main-padding-vert": "1rem",
-  "--nav-area-bg-color": "#7f8472",
-  "--nav-area-font": "Helvetica",
-  "--nav-area-font-color": "beige",
-  "--nav-area-font-size": "1rem",
-  "--nav-padding-horiz": "1rem",
-  "--nav-padding-vert": "1rem",
-  "--nav-text-shadow": "0.1rem 0.05rem 0.25rem #00000080",
-  "--text-accent-color": "yellow",
-  "--title-font": "Helvetica",
-}
-
 export {
   auth,
   database,
   getUserSiteList,
   writeUserSitePreferences,
+  writeUserSiteAttribute,
   getUserSitePreferences,
   startUI,
   resetUI,

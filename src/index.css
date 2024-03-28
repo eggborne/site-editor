@@ -1,4 +1,3 @@
-
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -20,7 +19,8 @@
 
 a,
 button,
-input {
+input,
+select {
   pointer-events: all;
   outline: none;
   text-decoration: none;

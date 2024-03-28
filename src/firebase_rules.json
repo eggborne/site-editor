@@ -1,0 +1,14 @@
+{
+  "rules": {
+    "clients": {
+      "$userId": {
+        ".read": "$userId === auth.uid",
+        ".write": "$userId === auth.uid"
+      }
+    },
+    "preferences": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
+  }
+}
