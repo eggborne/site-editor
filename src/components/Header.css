@@ -29,10 +29,7 @@ header h1 {
 }
 
 .user-info button.sign-out-button {
-  position: fixed;
-  bottom: 0;
-  right: 0;
   background-color: red;
-  padding: 0.5rem;
+  padding: 0.25rem;
   margin: 0 !important;
 }

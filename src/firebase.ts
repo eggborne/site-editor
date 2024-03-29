@@ -1,15 +1,10 @@
-// Import the functions you need from the SDKs you need
 import * as firebaseui from 'firebaseui';
 import { initializeApp } from "firebase/app";
-import { EmailAuthProvider, GithubAuthProvider, GoogleAuthProvider, PhoneAuthProvider, getAuth } from 'firebase/auth';
+import { EmailAuthProvider, GithubAuthProvider, GoogleAuthProvider, getAuth } from 'firebase/auth';
 import { child, get, getDatabase, ref, set } from "firebase/database";
+import { } from 'firebase/database';
 // import { getAnalytics } from "firebase/analytics";
 
-
-import { } from 'firebase/database';
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyBkJTNcO9Tg5q_4bnF9WvVgqrrEmeNk8Gw",
   authDomain: "site-editor-70b42.firebaseapp.com",
@@ -21,7 +16,6 @@ const firebaseConfig = {
   databaseURL: "https://site-editor-70b42-default-rtdb.firebaseio.com/",
 };
 
-// Initialize Firebase
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const database = getDatabase(firebaseApp);
@@ -47,7 +41,6 @@ const startUI = () => {
       },
       uiShown: () => {
         console.warn('----- UI RENDERED ---------');
-        // The UI has been rendered.
       }
     },
     tosUrl: '/',
@@ -60,12 +53,14 @@ const resetUI = () => {
   startUI();
 }
 
-const writeUserSitePreferences = (siteId: string, newPreferencesObj: object, type: string) => {
-  set(ref(database, `preferences/${siteId}/${type}`), newPreferencesObj);
+const writeUserSitePreferences = (siteId: string, newPreferencesObj: object) => {
+  set(ref(database, `preferences/${siteId}/prod`), newPreferencesObj);
 }
 
-const writeUserSiteAttribute = (userId: string, siteId: string, newAttributeKey: string, newAttributeValue: string ) => {
-  set(ref(database, `preferences/${userId}/${siteId}/${newAttributeKey}`), newAttributeValue);
+const writeUserSiteAttribute = (siteId: string, newAttributeKey: string, newAttributeValue: string) => {
+  const dbUrl = `preferences/${siteId}/test/${newAttributeKey}`;
+  console.log('writing', newAttributeKey, newAttributeValue, 'to', dbUrl)
+  set(ref(database, dbUrl), newAttributeValue);
 }
 
 const getUserSiteList = async (userId: string) => {
@@ -77,10 +72,6 @@ const getUserSiteList = async (userId: string) => {
     console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> No user site data available");
     return null;
   }
-}
-
-const setSiteForUser = (userId: string, siteId: string) => {
-  set(ref(database, `clients/${userId}/sites`), ['13467d21-a3a5-4ba5-88b3-ce98be547f90']);
 }
 
 const getUserSitePreferences = async (siteId: string) => {
@@ -105,5 +96,4 @@ export {
   getUserSitePreferences,
   startUI,
   resetUI,
-  // analytics,
 };

@@ -14,7 +14,7 @@ const Header: FC<HeaderProps> = ({ ready, currentUser, signUserOut }) => {
       {ready ?
         currentUser &&
         <div className='user-info'>
-          Logged in as {currentUser.displayName || currentUser.email}
+          {currentUser.displayName || currentUser.email}
             {currentUser.photoURL ?
               <div className={'user-avatar'} style={{ backgroundImage: `url(${currentUser.photoURL})` || `` }} />
             :
