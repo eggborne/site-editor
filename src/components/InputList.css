@@ -55,6 +55,7 @@ input[type="color"] {
   min-height: 6rem;
   border: none;
   background-color: transparent;
+  border-radius: 0;
 }
 
 input[type="range"] {

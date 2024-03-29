@@ -53,21 +53,41 @@ const resetUI = () => {
   startUI();
 }
 
-const writeUserSitePreferences = (siteId: string, newPreferencesObj: object) => {
-  set(ref(database, `preferences/${siteId}/prod`), newPreferencesObj);
+const writeUserSitePreferences = async (siteId: string, newPreferencesObj: object) => {
+  // const result = await set(ref(database, `sites/${siteId}/prod`), newPreferencesObj);
+  // return result;
+
+  try {
+    await set(ref(database, `sites/${siteId}/prod`), newPreferencesObj);
+    console.log('Save operation was successful');
+    return true; // Indicates success
+  } catch (error) {
+    console.error('Save operation failed:', error);
+    return false; // Indicates failure
+  }
 }
 
 const writeUserSiteAttribute = (siteId: string, newAttributeKey: string, newAttributeValue: string) => {
-  const dbUrl = `preferences/${siteId}/test/${newAttributeKey}`;
+  const dbUrl = `sites/${siteId}/test/${newAttributeKey}`;
   console.log('writing', newAttributeKey, newAttributeValue, 'to', dbUrl)
   set(ref(database, dbUrl), newAttributeValue);
 }
 
 const getUserSiteList = async (userId: string) => {
   const dbRef = ref(getDatabase());
-  const snapshot = await get(child(dbRef, `clients/${userId}/sites`));
+  const snapshot = await get(child(dbRef, `sites`));
   if (snapshot.exists()) {
-    return snapshot.val();
+    // const userSites = Object.values(snapshot.val()).filter((site: any) => {
+    //   console.log('site?', site);
+    //   return Object.keys(site.authorizedUsers).includes(userId);;
+    // });
+    const userSites = [];
+    for (let siteId in snapshot.val()) {
+      const siteObj = snapshot.val()[siteId];
+      Object.keys(siteObj.authorizedUsers).includes(userId) && userSites.push({...siteObj, siteId});
+    }
+    console.log('userSites?', userSites);
+    return userSites;
   } else {
     console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> No user site data available");
     return null;
@@ -76,7 +96,7 @@ const getUserSiteList = async (userId: string) => {
 
 const getUserSitePreferences = async (siteId: string) => {
   const dbRef = ref(getDatabase());
-  const snapshot = await get(child(dbRef, `preferences/${siteId}/test`));
+  const snapshot = await get(child(dbRef, `sites/${siteId}/test`));
   if (snapshot.exists()) {
     return snapshot.val();
   } else {

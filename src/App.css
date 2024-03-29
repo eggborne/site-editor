@@ -20,6 +20,10 @@ header, footer {
   justify-content: center;
 }
 
+footer {
+  min-height: 2rem;
+}
+
 main {
   flex-grow: 1;
   background-color: rgb(45, 45, 33);

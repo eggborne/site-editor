@@ -3,7 +3,21 @@ import { ChangeEvent, FC } from 'react';
 import './InputList.css';
 import { CSSPropertiesState } from '../App';
 
-const fontOptions = ["Helvetica", "Arial", "Times New Roman", "Georgia", "Sans-serif"];
+const fontOptions = [
+  "Arial",
+  "Verdana",
+  "Helvetica",
+  "Tahoma",
+  "Trebuchet MS",
+  "Times New Roman",
+  "Georgia",
+  "Garamond",
+  "Courier New",
+  "Lucida Console",
+  "Comic Sans MS",
+  "Arial Black",
+  "Impact"
+];
 
 interface InputListProps {
   propertiesKey: any;

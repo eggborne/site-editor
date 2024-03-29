@@ -5,12 +5,14 @@ import { auth, getUserSiteList, getUserSitePreferences, resetUI, startUI, writeU
 import { User, signOut } from 'firebase/auth';
 import Header from './components/Header';
 import InputList from './components/InputList';
+import ToastModal from './components/ToastModal';
 
 // window.addEventListener('DOMContentLoaded', startUI);
 
 export interface CSSPropertiesState {
   '--main-bg-color': string;
   '--main-font-color': string;
+  '--main-font-size': string;
   '--header-bg-color': string;
   '--nav-area-bg-color': string;
   '--nav-area-font-color': string;
@@ -96,6 +98,14 @@ const propertiesKey = {
     label: 'Main Font Color',
     type: 'color',
   },
+  '--main-font-size': {
+    label: 'Main Font Size',
+    type: 'range',
+    min: 0.1,
+    max: 3.5,
+    step: 0.1,
+    unit: 'rem',
+  },
   '--main-padding-horiz': {
     label: 'Main Padding Horizontal',
     type: 'range',
@@ -152,25 +162,25 @@ const propertiesKey = {
   '--nav-text-shadow-x': {
     label: 'Nav Text Shadow X',
     type: 'range',
-    min: 0,
-    max: 10,
-    step: 0.1,
+    min: -2,
+    max: 2,
+    step: 0.01,
     unit: 'rem',
   },
   '--nav-text-shadow-y': {
     label: 'Nav Text Shadow Y',
     type: 'range',
-    min: 0,
-    max: 10,
-    step: 0.1,
+    min: -2,
+    max: 2,
+    step: 0.01,
     unit: 'rem',
   },
   '--nav-text-shadow-blur': {
     label: 'Nav Text Shadow Blur',
     type: 'range',
     min: 0,
-    max: 10,
-    step: 0.1,
+    max: 1,
+    step: 0.01,
     unit: 'rem',
   },
   '--nav-text-shadow-color': {
@@ -194,16 +204,15 @@ const propertiesKey = {
 }
 
 function App() {
-
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [siteList, setSiteList] = useState([]);
   const [currentSite, setCurrentSite] = useState({ siteId: '', siteName: '', siteUrl: '' });
   const [currentCSSValues, setCurrentCSSValues] = useState({} as CSSPropertiesState);
+  const [justSaved, setJustSaved] = useState(false);
 
   const init = () => {
-
     auth.onAuthStateChanged(async (user: User | null) => {
       console.warn('AUTH STATE CHANGED! ---------------------->')
       if (user) {
@@ -211,14 +220,7 @@ function App() {
         // const newSignUp = user.metadata.creationTime === user.metadata.lastSignInTime;
         setCurrentUser(user);
         let sites = await getUserSiteList(user.uid);
-        const nextSiteList: Array<any> = new Array();
-        for (let site in sites) {
-          const siteObj = sites[site];
-          siteObj.siteId = site;
-          console.log('siteObj?', siteObj);
-          nextSiteList.push(siteObj);
-        }
-        setSiteList(nextSiteList as any);
+        setSiteList(sites as any);
         if (!ready) {
           setReady(true);
         }
@@ -232,9 +234,16 @@ function App() {
     });
   };
 
-  const handleClickSave = () => {
+  const handleClickSave = async () => {
     if (currentUser) {
-      writeUserSitePreferences(currentSite.siteId, currentCSSValues);
+      const saved = await writeUserSitePreferences(currentSite.siteId, currentCSSValues);
+      if (saved) {
+        setJustSaved(true);
+        setTimeout(() => {
+          setJustSaved(false);
+        }, 2000);
+      }
+      
     }
   }
 
@@ -310,8 +319,12 @@ function App() {
         }
       </main>
       <footer>
-        {currentUser && <button onClick={handleClickSave} type='button'>SAVE IT FOR REAL</button>}
+        {currentSite.siteId && <button onClick={handleClickSave} type='button'>SAVE IT FOR REAL</button>}
       </footer>
+      <ToastModal message={`
+      Saved!
+      ${currentSite.siteUrl}
+      `} visible={justSaved} />
     </>
   )
 }
