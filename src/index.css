@@ -20,7 +20,8 @@
 a,
 button,
 input,
-select {
+select,
+textarea {
   pointer-events: all;
   outline: none;
   text-decoration: none;

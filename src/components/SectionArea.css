@@ -1,0 +1,44 @@
+.section-area {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+h2 {
+  text-align: center;
+}
+
+input, textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 0.1rem;
+  border: 1px solid #00000055;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 10rem;
+}
+
+.section-control {
+  padding: 0.5rem;
+  background-color: #00000055;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.section-control label {
+  min-width: max-content;
+  width: 10rem;
+}
+
+.section-control > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.section-control > div.large-text {
+  flex-direction: column;
+  height: max-content;
+}

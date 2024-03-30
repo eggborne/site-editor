@@ -6,6 +6,7 @@ import { User, signOut } from 'firebase/auth';
 import Header from './components/Header';
 import InputList from './components/InputList';
 import ToastModal from './components/ToastModal';
+import SectionArea from './components/SectionArea';
 
 // window.addEventListener('DOMContentLoaded', startUI);
 
@@ -35,6 +36,16 @@ export interface CSSPropertiesState {
   '--nav-text-shadow-color': string;
   '--text-accent-color': string;
   '--hamburger-animation-duration': string;
+  '--hamburger-color': string;
+  '--hamburger-line-color': string;
+  '--hamburger-line-thickness': string;
+  '--hamburger-on-color': string;
+  '--hamburger-roundness': string;
+  '--logo-size': string;
+  '--logo-color': string;
+  '--title-font-size': string;
+  '--title-font-color': string;
+  'sections': object;
 }
 
 const propertiesKey = {
@@ -103,7 +114,7 @@ const propertiesKey = {
     type: 'range',
     min: 0.1,
     max: 3.5,
-    step: 0.1,
+    step: 0.005,
     unit: 'rem',
   },
   '--main-padding-horiz': {
@@ -126,6 +137,14 @@ const propertiesKey = {
     label: 'Nav Area Background Color',
     type: 'color',
   },
+  '--nav-area-width': {
+    label: 'Nav Area Width',
+    type: 'range',
+    min: 2,
+    max: 24,
+    step: 0.1,
+    unit: 'rem',
+  },
   '--nav-area-font': {
     label: 'Nav Area Font',
     type: 'select',
@@ -140,7 +159,7 @@ const propertiesKey = {
     type: 'range',
     min: 0.1,
     max: 3.5,
-    step: 0.1,
+    step: 0.05,
     unit: 'rem',
   },
   '--nav-padding-horiz': {
@@ -164,7 +183,7 @@ const propertiesKey = {
     type: 'range',
     min: -2,
     max: 2,
-    step: 0.01,
+    step: 0.05,
     unit: 'rem',
   },
   '--nav-text-shadow-y': {
@@ -172,7 +191,7 @@ const propertiesKey = {
     type: 'range',
     min: -2,
     max: 2,
-    step: 0.01,
+    step: 0.05,
     unit: 'rem',
   },
   '--nav-text-shadow-blur': {
@@ -180,7 +199,7 @@ const propertiesKey = {
     type: 'range',
     min: 0,
     max: 1,
-    step: 0.01,
+    step: 0.05,
     unit: 'rem',
   },
   '--nav-text-shadow-color': {
@@ -196,12 +215,64 @@ const propertiesKey = {
     type: 'select',
     options: ['Arial', 'Helvetica', 'sans-serif'],
   },
+  '--title-font-size': {
+    label: 'Title Font Size',
+    type: 'range',
+    min: 0.1,
+    max: 3.5,
+    step: 0.05,
+    unit: 'rem',
+  },
+  '--title-font-color': {
+    label: 'Title Font Color',
+    type: 'color',
+  },
   '--main-font': {
     label: 'Main Font',
     type: 'select',
     options: ['Arial', 'Helvetica', 'sans-serif'],
   },
-}
+  '--logo-size': {
+    label: 'Logo Size',
+    type: 'range',
+    min: 1,
+    max: 10,
+    step: 0.1,
+    unit: 'rem',
+  },
+  '--logo-color': {
+    label: 'Logo Color',
+    type: 'color',
+  },
+  '--hamburger-color': {
+    label: 'Hamburger Color',
+    type: 'color',
+  },
+  '--hamburger-line-color': {
+    label: 'Hamburger Line Color',
+    type: 'color',
+  },
+  '--hamburger-line-thickness': {
+    label: 'Hamburger Line Thickness',
+    type: 'range',
+    min: 0.1,
+    max: 1,
+    step: 0.01,
+    unit: 'rem',
+  },
+  '--hamburger-on-color': {
+    label: 'Hamburger On Color',
+    type: 'color',
+  },
+  '--hamburger-roundness': {
+    label: 'Hamburger Roundness',
+    type: 'range',
+    min: 0,
+    max: 50,
+    step: 0.5,
+    unit: '%'
+  }
+};
 
 function App() {
   const [ready, setReady] = useState(false);
@@ -285,6 +356,8 @@ function App() {
     getPrefs();
   }, [currentSite]);
 
+  const cssVariables = Object.entries(currentCSSValues).filter(prop => prop[0].indexOf('--') === 0);
+  
   return (
     <>
       <Header ready={ready} currentUser={currentUser} signUserOut={signUserOut} />
@@ -305,7 +378,8 @@ function App() {
               !loading ?
                 <>
                   <h3><a href={`${currentSite.siteUrl}?test`} target='_blank' rel='noopener noreferrer'>{currentSite.siteUrl}?test</a></h3>
-                  <InputList propertiesKey={propertiesKey} cssProperties={currentCSSValues} handleChangeProperty={handleChangeProperty} />
+                  <SectionArea sections={Object.entries(currentCSSValues.sections)} />
+                  <InputList propertiesKey={propertiesKey} cssVariables={cssVariables} handleChangeProperty={handleChangeProperty} />
                 </>
                 :
                 <div>loading...</div>

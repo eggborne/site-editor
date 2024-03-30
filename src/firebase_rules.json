@@ -6,9 +6,17 @@
         ".write": "$userId === auth.uid"
       }
     },
-    "preferences": {
-      ".read": true,
-      ".write": "auth != null"
+    "sites": {
+      ".read": "auth != null",
+      "$siteId": {
+        ".write": "auth != null",
+        "test": {
+          ".read": true
+        },
+        "prod": {
+          ".read": true
+        }
+      }
     }
   }
 }
