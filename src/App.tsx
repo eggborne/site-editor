@@ -7,6 +7,8 @@ import Header from './components/Header';
 import InputList from './components/InputList';
 import ToastModal from './components/ToastModal';
 import SectionArea from './components/SectionArea';
+import { storage } from './firebase_storage';
+import { deleteObject, getDownloadURL, list, ref, uploadBytesResumable } from 'firebase/storage';
 
 // window.addEventListener('DOMContentLoaded', startUI);
 
@@ -25,8 +27,6 @@ export interface CSSPropertiesState {
   '--nav-padding-horiz': string;
   '--nav-padding-vert': string;
   '--header-height': string;
-  '--header-padding-horiz': string;
-  '--header-padding-vert': string;
   '--title-font': string;
   '--main-font': string;
   '--footer-height': string;
@@ -81,22 +81,6 @@ const propertiesKey = {
     label: 'Header Height',
     type: 'range',
     min: 1,
-    max: 10,
-    step: 0.1,
-    unit: 'rem',
-  },
-  '--header-padding-horiz': {
-    label: 'Header Padding Horizontal',
-    type: 'range',
-    min: 0,
-    max: 10,
-    step: 0.1,
-    unit: 'rem',
-  },
-  '--header-padding-vert': {
-    label: 'Header Padding Vertical',
-    type: 'range',
-    min: 0,
     max: 10,
     step: 0.1,
     unit: 'rem',
@@ -271,7 +255,19 @@ const propertiesKey = {
     max: 50,
     step: 0.5,
     unit: '%'
-  }
+  },
+  '--section-heading-color': {
+    label: 'Section Heading Color',
+    type: 'color',
+  },
+  '--section-heading-font-size': {
+    label: 'Section Heading Font Size',
+    type: 'range',
+    min: 0.5,
+    max: 3.5,
+    step: 0.01,
+    unit: 'rem',
+  },
 };
 
 function App() {
@@ -282,6 +278,8 @@ function App() {
   const [currentSite, setCurrentSite] = useState({ siteId: '', siteName: '', siteUrl: '' });
   const [currentCSSValues, setCurrentCSSValues] = useState({} as CSSPropertiesState);
   const [justSaved, setJustSaved] = useState(false);
+  const [siteStorage, setSiteStorage] = useState(null as any);
+  const [siteImages, setSiteImages] = useState(null as any);
 
   const init = () => {
     auth.onAuthStateChanged(async (user: User | null) => {
@@ -327,6 +325,9 @@ function App() {
   const handleClickSite = (e: any) => {
     const nextSite: any = siteList.find((site: any) => site.siteId === e.target.id);
     setCurrentSite(nextSite);
+    const storageRef = ref(storage, 'sites/' + nextSite.siteId + '/images');
+    console.log('storageRef', storageRef)
+    setSiteStorage(storageRef);
   }
 
   const handleChangeProperty = (name: string, value: string) => {
@@ -336,6 +337,64 @@ function App() {
       writeUserSiteAttribute(currentSite.siteId, name, value);
 
   }
+
+  const getImageArray = async (siteImages: any) => {
+    const urls: object[] = [];
+    for (const image of siteImages) {
+      const imageRef = ref(siteStorage, image.name);
+      const url = await getDownloadURL(imageRef);
+      urls.push({url, imageName: image.name, size: image.size});
+    }
+    return urls;
+  };
+
+  const uploadFiles = async (files: File[]) => {
+    for (const file of files) {
+      const fileRef = ref(siteStorage, file.name);
+      console.log('uploading file', file.name, 'to', fileRef);
+      await uploadBytesResumable(fileRef, file);
+    }
+
+    const listRef = ref(storage, 'sites/' + currentSite.siteId + '/images');
+    const result = await list(listRef);
+    const newImages = await getImageArray(result.items);
+    setSiteImages(newImages);
+  }
+
+  const uploadFile = async (file: File) => {
+    const fileRef = ref(siteStorage, file.name);
+    console.log('uploading file', file.name, 'to', fileRef)
+    await uploadBytesResumable(fileRef, file);
+
+    const listRef = ref(storage, 'sites/' + currentSite.siteId + '/images');
+    const result = await list(listRef);
+    const newImages = await getImageArray(result.items);
+    setSiteImages(newImages);
+  }
+  
+  const deleteImage = async (imageName: string) => {
+    const imageRef = ref(siteStorage, imageName);
+    await deleteObject(imageRef);
+    
+    const listRef = ref(storage, 'sites/' + currentSite.siteId + '/images');
+    const result = await list(listRef);
+    const newImages = await getImageArray(result.items);
+    setSiteImages(newImages);
+  };
+
+  useEffect(() => {
+    console.log('siteStorage', siteStorage)
+    if (siteStorage) {
+      const listRef = ref(storage, 'sites/' + currentSite.siteId + '/images');
+      list(listRef).then(async result => {
+        console.log('list result', result.items);
+        const newImages = await getImageArray(result.items);
+        console.log('newImages', newImages);
+        setSiteImages(newImages);
+      });
+    }
+
+  }, [siteStorage])
 
   useEffect(() => {
     init();
@@ -378,8 +437,17 @@ function App() {
               !loading ?
                 <>
                   <h3><a href={`${currentSite.siteUrl}?test`} target='_blank' rel='noopener noreferrer'>{currentSite.siteUrl}?test</a></h3>
-                  <SectionArea sections={Object.entries(currentCSSValues.sections)} />
-                  <InputList propertiesKey={propertiesKey} cssVariables={cssVariables} handleChangeProperty={handleChangeProperty} />
+                    <SectionArea
+                      sections={Object.entries(currentCSSValues.sections)}
+                      uploadFile={uploadFiles}
+                      siteImages={siteImages}
+                      deleteImage={deleteImage}
+                    />
+                    <InputList
+                      propertiesKey={propertiesKey}
+                      cssVariables={cssVariables}
+                      handleChangeProperty={handleChangeProperty}
+                    />
                 </>
                 :
                 <div>loading...</div>

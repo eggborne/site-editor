@@ -2,7 +2,6 @@ import * as firebaseui from 'firebaseui';
 import { initializeApp } from "firebase/app";
 import { EmailAuthProvider, GithubAuthProvider, GoogleAuthProvider, getAuth } from 'firebase/auth';
 import { child, get, getDatabase, ref, set } from "firebase/database";
-import { } from 'firebase/database';
 // import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {

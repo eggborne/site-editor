@@ -26,6 +26,12 @@ textarea {
   outline: none;
   text-decoration: none;
   -webkit-tap-highlight-color: transparent;
+}
+a,
+button,
+input[type="range"],
+input[type="color"],
+select {
   cursor: pointer;
 }
 

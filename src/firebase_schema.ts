@@ -21,8 +21,6 @@ interface FirebaseSchema {
         "--hamburger-size": string;
         "--header-bg-color": string;
         "--header-height": string;
-        "--header-padding-horiz": string;
-        "--header-padding-vert": string;
         "--main-bg-color": string;
         "--main-font": string;
         "--main-font-color": string;
