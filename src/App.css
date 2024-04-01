@@ -48,3 +48,11 @@ main {
 h3 {
   text-align: center;
 }
+
+button.caution {
+  background-color: var(--caution-color);
+}
+
+button.go {
+  background-color: var(--go-color);
+}

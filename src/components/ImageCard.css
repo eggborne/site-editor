@@ -1,0 +1,93 @@
+.image-card {
+  position: relative;
+  width: 100%;
+  /* display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr; */
+  gap: 0.5rem;
+  max-width: calc(100% - 1rem);
+  background-color: gray;
+  padding: 1rem;
+  transition: all 250ms ease;
+}
+
+.image-card.unsaved {
+  background-color: #00ff0033;
+  outline: 8px solid rgb(201, 82, 82);
+}
+
+input {
+  margin-bottom: 0.5rem !important;
+}
+
+.preview-image {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+  object-fit: contain;
+  grid-row-start: 1;
+  grid-row-end: 4;
+}
+
+.image-label {
+  left: 0;
+  font-size: 0.75rem;
+  padding: 0.25rem;
+}
+
+.image-label.file-name {
+  top: 0;
+  min-height: 1.5rem;
+  background-color: #00000033;
+  top: 0;
+}
+
+.dimensions-area {
+  position: relative;
+  max-width: 70vw;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.dimensions-area > input {
+  font-size: 1.25rem;
+}
+
+.edit-controls {
+  display: flex;
+  align-items:center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+button.image-save-button {
+  background-color: green;
+  outline: 4px solid orange;
+  color: rgb(163, 255, 138);
+  transition: all 250ms ease;
+}
+
+button.image-save-button:disabled {
+  outline: none;
+  background-color: rgb(144, 243, 165);
+  color: gray;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+button.image-delete-button {
+  position: absolute;
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: 0.75rem;
+  top: 0;
+  right: 0;
+  margin: 0 !important;
+  border-radius: 0;
+  padding: 0;
+  background-color: red;
+  opacity: 0.75;
+}

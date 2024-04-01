@@ -1,7 +1,6 @@
 
 import { ChangeEvent, FC } from 'react';
 import './InputList.css';
-import { CSSPropertiesState } from '../App';
 
 const fontOptions = [
   "Arial",

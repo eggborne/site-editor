@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 import './App.css';
 import LoginScreen from './components/LoginScreen';
-import { auth, getUserSiteList, getUserSitePreferences, resetUI, startUI, writeUserSiteAttribute, writeUserSitePreferences } from './firebase';
+import { auth, database, getUserSiteList, getUserSitePreferences, resetUI, startUI, writeUserImageData, writeUserSectionAttribute, writeUserSiteAttribute, writeUserSitePreferences } from './firebase';
 import { User, signOut } from 'firebase/auth';
 import Header from './components/Header';
 import InputList from './components/InputList';
 import ToastModal from './components/ToastModal';
 import SectionArea from './components/SectionArea';
 import { storage } from './firebase_storage';
-import { deleteObject, getDownloadURL, list, ref, uploadBytesResumable } from 'firebase/storage';
+import { deleteObject, getDownloadURL, getMetadata, list, ref, uploadBytesResumable } from 'firebase/storage';
+import { get, ref as dbRef } from 'firebase/database';
 
 // window.addEventListener('DOMContentLoaded', startUI);
 
@@ -270,6 +271,14 @@ const propertiesKey = {
   },
 };
 
+export interface publishObj {
+  file: File;
+  title: string;
+  description: string;
+  media: string;
+  dimensions: Record<string, number>;
+}
+
 function App() {
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -312,7 +321,6 @@ function App() {
           setJustSaved(false);
         }, 2000);
       }
-      
     }
   }
 
@@ -335,63 +343,111 @@ function App() {
     setCurrentCSSValues(nextCSSValues);
     currentUser &&
       writeUserSiteAttribute(currentSite.siteId, name, value);
-
   }
 
   const getImageArray = async (siteImages: any) => {
-    const urls: object[] = [];
+    const imageArr: object[] = [];
     for (const image of siteImages) {
+      console.log('doing image', image)
       const imageRef = ref(siteStorage, image.name);
-      const url = await getDownloadURL(imageRef);
-      urls.push({url, imageName: image.name, size: image.size});
+      const imageDataRef = dbRef(database, `sites/${currentSite.siteId}/prod/sections/0/images/${splitFileName(image.name)[0]}`);
+      const imageMetadata = await get(imageDataRef);
+      console.log('imageMetadata', imageMetadata.val());
+      // const url = await getDownloadURL(imageRef);
+      const meta = await getMetadata(imageRef);
+
+      console.log('meta??', meta);
+
+      const fullMetadata = { ...imageMetadata.val(), ...meta };
+      console.log('----- full metatatata', fullMetadata);
+      // const fullMetadata = { ...imageMetadata.val(), url, ...meta };
+      imageArr.push(fullMetadata);
+
+      // imageArr.push({url, ...image});
     }
-    return urls;
+    return imageArr;
   };
 
-  const uploadFiles = async (files: File[]) => {
-    for (const file of files) {
-      const fileRef = ref(siteStorage, file.name);
-      console.log('uploading file', file.name, 'to', fileRef);
-      await uploadBytesResumable(fileRef, file);
+  const splitFileName = (fileName: string) => {
+    return fileName.lastIndexOf('.') > 0
+      ? [fileName.substring(0, fileName.lastIndexOf('.')), fileName.substring(fileName.lastIndexOf('.') + 1)]
+      : [fileName, ''];
+  }
+
+  const publishFile = async ({ file, title, description, media, dimensions }: publishObj) => {
+    const imageRef = ref(siteStorage, file.name);
+    console.log('uploading file', file.name, 'to', imageRef);
+    await uploadBytesResumable(imageRef, file);
+    const url = await getDownloadURL(imageRef);
+    const size = file.size;
+    const filename = file.name;
+    const splitFileNameArr = splitFileName(filename);
+    console.log('splitFileNameArr', splitFileNameArr);
+    const metadata = {
+      fileName: splitFileNameArr[0],
+      extension: splitFileNameArr[1],
+      url,
+      size,
+      title: title || 'Sample Title',
+      description: description || 'Sample Description',
+      media: media || 'Sample Media',
+      dimensions: dimensions.width || { width: 1, height: 1 },
+    };
+    console.log('writing image data', metadata)
+    const savedResult = await writeUserImageData(currentSite.siteId, metadata);
+    if (savedResult) {
+      console.log('saved image data');
+      await deletePreviewImage(file.name);
+      refreshSiteImages();
+    } else {
+      console.error('failed to save image data');
     }
+  }
 
-    const listRef = ref(storage, 'sites/' + currentSite.siteId + '/images');
-    const result = await list(listRef);
+  const getPreviewImageUrl = async (file: File) => {
+    const previewRef = ref(siteStorage, '/preview/' + file.name);
+    const uploadResult = await uploadBytesResumable(previewRef, file);
+    console.log('preview uploaded?', uploadResult);
+    const url = await getDownloadURL(previewRef);
+    return url;
+  }
+
+  const refreshSiteImages = async () => {
+    // const listRef = ref(storage, 'sites/' + currentSite.siteId + '/images');
+    const result = await list(siteStorage);
     const newImages = await getImageArray(result.items);
     setSiteImages(newImages);
   }
 
-  const uploadFile = async (file: File) => {
-    const fileRef = ref(siteStorage, file.name);
-    console.log('uploading file', file.name, 'to', fileRef)
-    await uploadBytesResumable(fileRef, file);
-
-    const listRef = ref(storage, 'sites/' + currentSite.siteId + '/images');
-    const result = await list(listRef);
-    const newImages = await getImageArray(result.items);
-    setSiteImages(newImages);
-  }
-  
-  const deleteImage = async (imageName: string) => {
-    const imageRef = ref(siteStorage, imageName);
+  const deleteImage = async (imageWithExt: string) => {
+    const imageRef = ref(siteStorage, imageWithExt);
     await deleteObject(imageRef);
-    
-    const listRef = ref(storage, 'sites/' + currentSite.siteId + '/images');
-    const result = await list(listRef);
-    const newImages = await getImageArray(result.items);
-    setSiteImages(newImages);
+    await refreshSiteImages();
   };
+
+  const deletePreviewImage = async (imageName: string) => {
+    const imageRef = ref(siteStorage, '/preview/' + imageName);
+    await deleteObject(imageRef);
+  };
+
+  const updateSectionData = async (newSectionData: any, sectionNumber: number) => {
+    console.log('updating section data', newSectionData);
+    Object.entries(newSectionData).forEach(([key, value]) => {
+      console.log('writing', key, value)
+      writeUserSectionAttribute(currentSite.siteId, sectionNumber, key, value as string);
+    });
+  }
 
   useEffect(() => {
-    console.log('siteStorage', siteStorage)
     if (siteStorage) {
-      const listRef = ref(storage, 'sites/' + currentSite.siteId + '/images');
-      list(listRef).then(async result => {
-        console.log('list result', result.items);
-        const newImages = await getImageArray(result.items);
-        console.log('newImages', newImages);
-        setSiteImages(newImages);
-      });
+      // const listRef = ref(storage, 'sites/' + currentSite.siteId + '/images');
+      // list(listRef).then(async result => {
+      //   console.log('list result', result.items);
+      //   const newImages = await getImageArray(result.items);
+      //   console.log('newImages', newImages);
+      //   setSiteImages(newImages);
+      // });
+      refreshSiteImages();
     }
 
   }, [siteStorage])
@@ -416,7 +472,7 @@ function App() {
   }, [currentSite]);
 
   const cssVariables = Object.entries(currentCSSValues).filter(prop => prop[0].indexOf('--') === 0);
-  
+
   return (
     <>
       <Header ready={ready} currentUser={currentUser} signUserOut={signUserOut} />
@@ -437,17 +493,20 @@ function App() {
               !loading ?
                 <>
                   <h3><a href={`${currentSite.siteUrl}?test`} target='_blank' rel='noopener noreferrer'>{currentSite.siteUrl}?test</a></h3>
-                    <SectionArea
-                      sections={Object.entries(currentCSSValues.sections)}
-                      uploadFile={uploadFiles}
-                      siteImages={siteImages}
-                      deleteImage={deleteImage}
-                    />
-                    <InputList
-                      propertiesKey={propertiesKey}
-                      cssVariables={cssVariables}
-                      handleChangeProperty={handleChangeProperty}
-                    />
+                  <SectionArea
+                    sections={Object.entries(currentCSSValues.sections)}
+                    currentSiteId={currentSite.siteId}
+                    siteImages={siteImages}
+                    publishFile={publishFile}
+                    updateSectionData={updateSectionData}
+                    getPreviewImageUrl={getPreviewImageUrl}
+                    deleteImage={deleteImage}
+                  />
+                  <InputList
+                    propertiesKey={propertiesKey}
+                    cssVariables={cssVariables}
+                    handleChangeProperty={handleChangeProperty}
+                  />
                 </>
                 :
                 <div>loading...</div>

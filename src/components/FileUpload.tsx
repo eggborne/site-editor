@@ -1,35 +1,83 @@
 import { FC, useState } from 'react';
 import './FileUpload.css';
+import { publishObj } from '../App';
 
 interface FileUploadProps {
-  uploadFile: (files: File[]) => void;
+  getPreviewImageUrl: (file: File) => Promise<string>;
+  publishFile: (newPublishObj: publishObj) => void;
 };
 
-const FileUpload: FC<FileUploadProps> = ({ uploadFile }) => {
-  const [files, setFiles] = useState<File[]>([]);
+const FileUpload: FC<FileUploadProps> = ({ publishFile, getPreviewImageUrl }) => {
+  const [file, setFile] = useState(null as File | null);
+  const [previewFileUrl, setPreviewFileUrl] = useState('' as string);
 
-  const handleUpload = async () => {
-    if (files.length === 0) {
+  const handleUpload = async (e: any) => {
+    e.preventDefault();
+    if (!file) {
       console.error('No files selected');
       return;
     } else {
-      uploadFile(files);
+      const title = e.target['image-title'].value;
+      const description = e.target['image-description'].value;
+      const media = e.target['image-media'].value;
+      const width = parseInt(e.target['image-width'].value);
+      const height = parseInt(e.target['image-height'].value);
+
+      console.log('preview file', previewFileUrl);
+      const newPublishObj = {
+        file,
+        title,
+        description,
+        media,
+        dimensions: { width, height },
+      }
+
+      console.log('newPublishObj', newPublishObj);
+      publishFile(newPublishObj);
     }
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
-      const newFiles = Array.from(files);
-      console.log('files are', newFiles);
-      setFiles(newFiles);
+      const nextPreviewFileUrlObj = Array.from(files)[0];
+      const nextPreviewFileUrl = await getPreviewImageUrl(nextPreviewFileUrlObj);
+      console.log('next preview file', nextPreviewFileUrl);
+      setPreviewFileUrl(nextPreviewFileUrl);
+      setFile(nextPreviewFileUrlObj);
     }
   };
 
   return (
     <div className='file-upload'>
-      <input type="file" onChange={handleFileChange} multiple />
-      <button onClick={handleUpload}>Upload Files</button>
+      <div className="upload-btn-wrapper">
+        {!file && <button className="caution">Add an image...</button>}
+        <input
+          type="file"
+          onChange={handleFileChange}
+          accept="image/*"
+        />
+      </div>
+      {file && <form onSubmit={handleUpload} id="upload-form">
+        {previewFileUrl ?
+          <img className='upload-preview-image' src={previewFileUrl} alt='preview' />
+          :
+          <div className='upload-preview-image-placeholder'>{'[no image selected]'}</div>
+        }
+        <label htmlFor='image-title'>Title</label>
+        <input type='text' id='image-title' name='image-title' />
+        <label htmlFor='image-description'>Description</label>
+        <textarea id='image-description' name='image-description' />
+        <label htmlFor='image-media'>Media</label>
+        <input type='text' id='image-media' name='image-media' />
+        <div className='two-columns'>
+          <label htmlFor='image-width'>Width</label>
+          <input type='number' id='image-width' name='image-width' />
+          <label htmlFor='image-height'>Height</label>
+          <input type='number' id='image-height' name='image-height' />
+        </div>
+        <button className="go" type='submit'>Publish Image!</button>
+      </form>}
     </div>
   );
 };

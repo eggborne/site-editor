@@ -53,6 +53,7 @@ const resetUI = () => {
 }
 
 const writeUserSitePreferences = async (siteId: string, newPreferencesObj: object) => {
+  console.warn('writeUserSitePreferences', siteId, newPreferencesObj)
   try {
     await set(ref(database, `sites/${siteId}/prod`), newPreferencesObj);
     console.log('Save operation was successful');
@@ -63,8 +64,23 @@ const writeUserSitePreferences = async (siteId: string, newPreferencesObj: objec
   }
 }
 
+const writeUserImageData = async (siteId: string, newImageDataObj: { fileName: string }) => {
+  try {
+    await set(ref(database, `sites/${siteId}/prod/sections/0/images/${newImageDataObj.fileName}`), newImageDataObj);
+    console.log('Save operation was successful');
+    return true;
+  } catch (error) {
+    console.error('Save operation failed:', error);
+    return false;
+  }
+}
+
 const writeUserSiteAttribute = (siteId: string, newAttributeKey: string, newAttributeValue: string) => {
   const dbUrl = `sites/${siteId}/test/${newAttributeKey}`;
+  set(ref(database, dbUrl), newAttributeValue);
+}
+const writeUserSectionAttribute = (siteId: string, sectionNumber: number, newAttributeKey: string, newAttributeValue: string) => {
+  const dbUrl = `sites/${siteId}/test/sections/${sectionNumber}/${newAttributeKey}`;
   set(ref(database, dbUrl), newAttributeValue);
 }
 
@@ -97,12 +113,16 @@ const getUserSitePreferences = async (siteId: string) => {
 
 // const analytics = getAnalytics(firebaseApp);
 
+
+
 export {
   auth,
   database,
   getUserSiteList,
+  writeUserImageData,
   writeUserSitePreferences,
   writeUserSiteAttribute,
+  writeUserSectionAttribute,
   getUserSitePreferences,
   startUI,
   resetUI,
