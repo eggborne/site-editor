@@ -21,22 +21,24 @@ const fontOptions = [
 interface InputListProps {
   propertiesKey: any;
   cssVariables: Array<[string, string]>;
-  handleChangeProperty: (name: string, value: string) => void;
+  cssData: Array<[string, string]>;
+  // cssData: Record<string, string>;
+  handleChangeProperty: (path: string, name: string, value: string) => void;
 }
 
-const InputList: FC<InputListProps> = ({ propertiesKey, cssVariables, handleChangeProperty }) => {
+const InputList: FC<InputListProps> = ({ propertiesKey, cssData, handleChangeProperty }) => {
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLSelectElement>) => {
     let { name, value } = event.target;
-    console.log('got', name, value);
     propertiesKey[name].unit && (value += propertiesKey[name].unit);
-    handleChangeProperty(name, value);
+    console.warn('handleInputchange changing', name, 'to', value)
+    handleChangeProperty('cssPreferences', name, value);
   };
   
   return (
     <div className={'input-list'}>
       <h2>Colors / Sizes</h2>
-      {cssVariables.map(([key, value]) => {
+      {cssData.map(([key, value]) => {
         const property = propertiesKey[key];
         return (
           <div className={`input-row ${property.type}`} key={key}>

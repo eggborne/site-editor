@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import './App.css';
 import LoginScreen from './components/LoginScreen';
-import { auth, database, getUserSiteList, getUserSitePreferences, resetUI, startUI, writeUserImageData, writeUserSectionAttribute, writeUserSiteAttribute, writeUserSitePreferences } from './firebase';
+import { auth, database, getUserSiteList, getUserSitePreferences, resetUI, saveUserSectionAttribute, startUI, writeUserImageData, writeUserSectionAttribute, writeUserSiteAttribute, writeUserSitePreferences } from './firebase';
 import { User, signOut } from 'firebase/auth';
 import Header from './components/Header';
 import InputList from './components/InputList';
@@ -9,7 +9,8 @@ import ToastModal from './components/ToastModal';
 import SectionArea from './components/SectionArea';
 import { storage } from './firebase_storage';
 import { deleteObject, getDownloadURL, getMetadata, list, ref, uploadBytesResumable } from 'firebase/storage';
-import { get, ref as dbRef } from 'firebase/database';
+import { get, ref as dbRef, remove } from 'firebase/database';
+import BusyIndicator from './components/BusyIndicator';
 
 // window.addEventListener('DOMContentLoaded', startUI);
 
@@ -47,6 +48,56 @@ export interface CSSPropertiesState {
   '--title-font-size': string;
   '--title-font-color': string;
   'sections': object;
+  'images': object;
+}
+
+export interface userCSSData {
+  '--main-bg-color': string;
+  '--main-font-color': string;
+  '--main-font-size': string;
+  '--header-bg-color': string;
+  '--nav-area-bg-color': string;
+  '--nav-area-font-color': string;
+  '--nav-area-font': string;
+  '--nav-area-font-size': string;
+  '--hamburger-size': string;
+  '--main-padding-horiz': string;
+  '--main-padding-vert': string;
+  '--nav-padding-horiz': string;
+  '--nav-padding-vert': string;
+  '--header-height': string;
+  '--title-font': string;
+  '--main-font': string;
+  '--footer-height': string;
+  '--nav-text-shadow-x': string;
+  '--nav-text-shadow-y': string;
+  '--nav-text-shadow-blur': string;
+  '--nav-text-shadow-color': string;
+  '--text-accent-color': string;
+  '--hamburger-animation-duration': string;
+  '--hamburger-color': string;
+  '--hamburger-line-color': string;
+  '--hamburger-line-thickness': string;
+  '--hamburger-on-color': string;
+  '--hamburger-roundness': string;
+  '--logo-size': string;
+  '--logo-color': string;
+  '--title-font-size': string;
+  '--title-font-color': string;
+}
+
+interface SectionData {
+  id: string;
+  label: string;
+  href: string;
+  textContent: string;
+}
+
+interface userValuesData {
+  cssPreferences: userCSSData;
+  sections: SectionData[];
+  images: object;
+  title: string;
 }
 
 const propertiesKey = {
@@ -284,8 +335,11 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [siteList, setSiteList] = useState([]);
+  const [savedUserValues, setSavedUserValues] = useState({} as userValuesData)
+  const [userValues, setUserValues] = useState({} as userValuesData)
   const [currentSite, setCurrentSite] = useState({ siteId: '', siteName: '', siteUrl: '' });
   const [currentCSSValues, setCurrentCSSValues] = useState({} as CSSPropertiesState);
+  const [databaseBusy, setDatabaseBusy] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [siteStorage, setSiteStorage] = useState(null as any);
   const [siteImages, setSiteImages] = useState(null as any);
@@ -312,10 +366,22 @@ function App() {
     });
   };
 
+  const getPrefs = async () => {
+    if (currentUser && currentUser.uid && currentSite) {
+      const prefs = await getUserSitePreferences(currentSite.siteId);
+      console.log('got prefs', prefs);
+      setUserValues(prefs);
+      setLoading(false);
+    }
+  }
+
   const handleClickSave = async () => {
-    if (currentUser) {
-      const saved = await writeUserSitePreferences(currentSite.siteId, currentCSSValues);
+    if (currentUser && !databaseBusy) {
+      console.log('CLICKED SAVE TO SAVE ---->', userValues);
+      setDatabaseBusy(true);
+      const saved = await writeUserSitePreferences(currentSite.siteId, userValues);
       if (saved) {
+        setDatabaseBusy(false);
         setJustSaved(true);
         setTimeout(() => {
           setJustSaved(false);
@@ -338,11 +404,11 @@ function App() {
     setSiteStorage(storageRef);
   }
 
-  const handleChangeProperty = (name: string, value: string) => {
+  const handleChangeProperty = (path: string, name: string, value: string) => {
     const nextCSSValues = { ...currentCSSValues, [name]: value };
+    console.warn('----- setting nextCSSValues', nextCSSValues);
     setCurrentCSSValues(nextCSSValues);
-    currentUser &&
-      writeUserSiteAttribute(currentSite.siteId, name, value);
+    currentUser && writeUserSiteAttribute(currentSite.siteId, path, name, value);
   }
 
   const getImageArray = async (siteImages: any) => {
@@ -350,20 +416,15 @@ function App() {
     for (const image of siteImages) {
       console.log('doing image', image)
       const imageRef = ref(siteStorage, image.name);
-      const imageDataRef = dbRef(database, `sites/${currentSite.siteId}/prod/sections/0/images/${splitFileName(image.name)[0]}`);
+      const imageDataRef = dbRef(database, `sites/${currentSite.siteId}/userContent/prod/images/${splitFileName(image.name)[0]}`);
       const imageMetadata = await get(imageDataRef);
       console.log('imageMetadata', imageMetadata.val());
       // const url = await getDownloadURL(imageRef);
       const meta = await getMetadata(imageRef);
-
-      console.log('meta??', meta);
-
+      console.log('getMetadata', meta);
       const fullMetadata = { ...imageMetadata.val(), ...meta };
-      console.log('----- full metatatata', fullMetadata);
-      // const fullMetadata = { ...imageMetadata.val(), url, ...meta };
+      console.log('----- full metatadata { ...imageMetadata.val(), ...meta } -->', fullMetadata);
       imageArr.push(fullMetadata);
-
-      // imageArr.push({url, ...image});
     }
     return imageArr;
   };
@@ -374,14 +435,13 @@ function App() {
       : [fileName, ''];
   }
 
-  const publishFile = async ({ file, title, description, media, dimensions }: publishObj) => {
+  const publishFile = async ({ file, title, description, media, dimensions }: publishObj, sectionPath: string) => {
     const imageRef = ref(siteStorage, file.name);
     console.log('uploading file', file.name, 'to', imageRef);
     await uploadBytesResumable(imageRef, file);
     const url = await getDownloadURL(imageRef);
     const size = file.size;
-    const filename = file.name;
-    const splitFileNameArr = splitFileName(filename);
+    const splitFileNameArr = splitFileName(file.name);
     console.log('splitFileNameArr', splitFileNameArr);
     const metadata = {
       fileName: splitFileNameArr[0],
@@ -391,66 +451,49 @@ function App() {
       title: title || 'Sample Title',
       description: description || 'Sample Description',
       media: media || 'Sample Media',
-      dimensions: dimensions.width || { width: 1, height: 1 },
+      dimensions: dimensions.width ? { ...dimensions } : { width: 1, height: 1 },
     };
     console.log('writing image data', metadata)
-    const savedResult = await writeUserImageData(currentSite.siteId, metadata);
+    const savedResult = await writeUserImageData(currentSite.siteId, sectionPath, metadata);
     if (savedResult) {
       console.log('saved image data');
-      await deletePreviewImage(file.name);
       refreshSiteImages();
     } else {
       console.error('failed to save image data');
     }
   }
 
-  const getPreviewImageUrl = async (file: File) => {
-    const previewRef = ref(siteStorage, '/preview/' + file.name);
-    const uploadResult = await uploadBytesResumable(previewRef, file);
-    console.log('preview uploaded?', uploadResult);
-    const url = await getDownloadURL(previewRef);
-    return url;
-  }
-
   const refreshSiteImages = async () => {
-    // const listRef = ref(storage, 'sites/' + currentSite.siteId + '/images');
     const result = await list(siteStorage);
     const newImages = await getImageArray(result.items);
+    console.log('got newImages', newImages)
     setSiteImages(newImages);
   }
 
   const deleteImage = async (imageWithExt: string) => {
     const imageRef = ref(siteStorage, imageWithExt);
+    const dataRef = dbRef(database, `sites/${currentSite.siteId}/userContent/prod/sections/0/images/${splitFileName(imageWithExt)[0]}`);
     await deleteObject(imageRef);
+    await remove(dataRef);
     await refreshSiteImages();
   };
 
-  const deletePreviewImage = async (imageName: string) => {
-    const imageRef = ref(siteStorage, '/preview/' + imageName);
-    await deleteObject(imageRef);
-  };
-
   const updateSectionData = async (newSectionData: any, sectionNumber: number) => {
-    console.log('updating section data', newSectionData);
-    Object.entries(newSectionData).forEach(([key, value]) => {
+    Object.entries(newSectionData).forEach(async ([key, value]) => {
       console.log('writing', key, value)
-      writeUserSectionAttribute(currentSite.siteId, sectionNumber, key, value as string);
+      writeUserSiteAttribute(currentSite.siteId, `sections/${sectionNumber}`, key, value as string);
     });
+    const nextUserValues = { ...userValues };
+    nextUserValues.sections[sectionNumber] = newSectionData;
+    console.log('nextUserValues?', nextUserValues);
+    setUserValues(nextUserValues);
   }
 
   useEffect(() => {
     if (siteStorage) {
-      // const listRef = ref(storage, 'sites/' + currentSite.siteId + '/images');
-      // list(listRef).then(async result => {
-      //   console.log('list result', result.items);
-      //   const newImages = await getImageArray(result.items);
-      //   console.log('newImages', newImages);
-      //   setSiteImages(newImages);
-      // });
       refreshSiteImages();
     }
-
-  }, [siteStorage])
+  }, [siteStorage]);
 
   useEffect(() => {
     init();
@@ -458,20 +501,17 @@ function App() {
   }, []);
 
   useEffect(() => {
-
-    async function getPrefs() {
-      if (currentUser && currentUser.uid && currentSite) {
-        const prefs = await getUserSitePreferences(currentSite.siteId);
-        console.log('got prefs', prefs);
-        setCurrentCSSValues(prefs);
-        setLoading(false);
-      }
-    }
-
     getPrefs();
   }, [currentSite]);
 
-  const cssVariables = Object.entries(currentCSSValues).filter(prop => prop[0].indexOf('--') === 0);
+  // const cssVariables = Object.entries(currentCSSValues).filter(prop => prop[0].indexOf('--') === 0);
+  const cssVariables = Object.entries(currentCSSValues)[0];
+
+  const cssData: Record<string, string> = {};
+
+  for (let [itemKey, itemValue] of Object.entries(currentCSSValues)) {
+    cssData[itemKey] = itemValue;
+  }
 
   return (
     <>
@@ -493,18 +533,22 @@ function App() {
               !loading ?
                 <>
                   <h3><a href={`${currentSite.siteUrl}?test`} target='_blank' rel='noopener noreferrer'>{currentSite.siteUrl}?test</a></h3>
+                  <div className='narrow-label-input'>
+                    <label>Main title:</label>
+                    <input type='text' defaultValue={userValues.title} onChange={e => handleChangeProperty('', 'title', e.target.value)}></input>
+                  </div>
                   <SectionArea
-                    sections={Object.entries(currentCSSValues.sections)}
+                    sections={Object.entries(userValues.sections)}
                     currentSiteId={currentSite.siteId}
                     siteImages={siteImages}
                     publishFile={publishFile}
                     updateSectionData={updateSectionData}
-                    getPreviewImageUrl={getPreviewImageUrl}
                     deleteImage={deleteImage}
                   />
                   <InputList
                     propertiesKey={propertiesKey}
                     cssVariables={cssVariables}
+                    cssData={Object.entries(userValues.cssPreferences)}
                     handleChangeProperty={handleChangeProperty}
                   />
                 </>
@@ -526,6 +570,7 @@ function App() {
       Saved!
       ${currentSite.siteUrl}
       `} visible={justSaved} />
+      <BusyIndicator visible={databaseBusy} />
     </>
   )
 }

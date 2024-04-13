@@ -53,9 +53,22 @@ const resetUI = () => {
 }
 
 const writeUserSitePreferences = async (siteId: string, newPreferencesObj: object) => {
-  console.warn('writeUserSitePreferences', siteId, newPreferencesObj)
+  console.warn('firebase.ts.writeUserSitePreferences', siteId, newPreferencesObj)
   try {
-    await set(ref(database, `sites/${siteId}/prod`), newPreferencesObj);
+    const result = await set(ref(database, `sites/${siteId}/userContent/prod`), newPreferencesObj);
+    console.log('Save operation was successful.', result);
+    return true;
+  } catch (error) {
+    console.error('Save operation failed:', error);
+    return false;
+  }
+}
+
+const writeUserImageData = async (siteId: string, sectionPath: string, newImageDataObj: { fileName: string }) => {
+  try {
+    const imageTargetUrl = `sites/${siteId}/userContent/test/images/${newImageDataObj.fileName}`;
+    console.warn('writeUserImageData', imageTargetUrl, newImageDataObj)
+    await set(ref(database, imageTargetUrl), newImageDataObj);
     console.log('Save operation was successful');
     return true;
   } catch (error) {
@@ -64,24 +77,29 @@ const writeUserSitePreferences = async (siteId: string, newPreferencesObj: objec
   }
 }
 
-const writeUserImageData = async (siteId: string, newImageDataObj: { fileName: string }) => {
-  try {
-    await set(ref(database, `sites/${siteId}/prod/sections/0/images/${newImageDataObj.fileName}`), newImageDataObj);
-    console.log('Save operation was successful');
-    return true;
-  } catch (error) {
-    console.error('Save operation failed:', error);
-    return false;
-  }
-}
-
-const writeUserSiteAttribute = (siteId: string, newAttributeKey: string, newAttributeValue: string) => {
-  const dbUrl = `sites/${siteId}/test/${newAttributeKey}`;
+const writeUserSiteAttribute = (siteId: string, path: string | '', newAttributeKey: string, newAttributeValue: string) => {
+  const dbUrl = `sites/${siteId}/userContent/test${path ? `/${path}` : ''}/${newAttributeKey}`;
+  console.log('dbUrl', dbUrl, 'adding', newAttributeValue);
   set(ref(database, dbUrl), newAttributeValue);
 }
+
+const saveUserSiteAttribute = (siteId: string, newAttributeKey: string, newAttributeValue: string) => {
+  console.warn('-- saveUserSiteAttribute to PROD', siteId, newAttributeKey, newAttributeValue);
+  const dbUrl = `sites/${siteId}/userContent/prod/cssPreferences/${newAttributeKey}`;
+  set(ref(database, dbUrl), newAttributeValue);
+}
+
 const writeUserSectionAttribute = (siteId: string, sectionNumber: number, newAttributeKey: string, newAttributeValue: string) => {
-  const dbUrl = `sites/${siteId}/test/sections/${sectionNumber}/${newAttributeKey}`;
+  const dbUrl = `sites/${siteId}/userContent/test/sections/${sectionNumber}/${newAttributeKey}`;
+  console.warn('writeUserSectionAttribute', siteId, sectionNumber, newAttributeKey, newAttributeValue);
   set(ref(database, dbUrl), newAttributeValue);
+}
+
+const saveUserSectionAttribute = async (siteId: string, sectionNumber: number, newAttributeKey: string, newAttributeValue: string) => {
+  console.warn('-- saveUserSectionAttribute to PROD', siteId, newAttributeKey, newAttributeValue);
+  const dbUrl = `sites/${siteId}/userContent/prod/sections/${sectionNumber}/${newAttributeKey}`;
+  await set(ref(database, dbUrl), newAttributeValue);
+  return true;
 }
 
 const getUserSiteList = async (userId: string) => {
@@ -102,7 +120,7 @@ const getUserSiteList = async (userId: string) => {
 
 const getUserSitePreferences = async (siteId: string) => {
   const dbRef = ref(getDatabase());
-  const snapshot = await get(child(dbRef, `sites/${siteId}/test`));
+  const snapshot = await get(child(dbRef, `sites/${siteId}/userContent/test`));
   if (snapshot.exists()) {
     return snapshot.val();
   } else {
@@ -123,6 +141,8 @@ export {
   writeUserSitePreferences,
   writeUserSiteAttribute,
   writeUserSectionAttribute,
+  saveUserSiteAttribute,
+  saveUserSectionAttribute,
   getUserSitePreferences,
   startUI,
   resetUI,

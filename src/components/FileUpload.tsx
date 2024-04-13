@@ -1,13 +1,13 @@
-import { FC, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import './FileUpload.css';
 import { publishObj } from '../App';
 
 interface FileUploadProps {
-  getPreviewImageUrl: (file: File) => Promise<string>;
-  publishFile: (newPublishObj: publishObj) => void;
+  publishFile: (newPublishObj: publishObj, sectionPath: string) => void;
+  sectionPath: string,
 };
 
-const FileUpload: FC<FileUploadProps> = ({ publishFile, getPreviewImageUrl }) => {
+const FileUpload: FC<FileUploadProps> = ({ publishFile, sectionPath }) => {
   const [file, setFile] = useState(null as File | null);
   const [previewFileUrl, setPreviewFileUrl] = useState('' as string);
 
@@ -33,15 +33,18 @@ const FileUpload: FC<FileUploadProps> = ({ publishFile, getPreviewImageUrl }) =>
       }
 
       console.log('newPublishObj', newPublishObj);
-      publishFile(newPublishObj);
+      URL.revokeObjectURL(previewFileUrl);
+      setPreviewFileUrl('');
+      publishFile(newPublishObj, sectionPath);
     }
   }
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
+    console.log('got files, ', files)
     if (files) {
       const nextPreviewFileUrlObj = Array.from(files)[0];
-      const nextPreviewFileUrl = await getPreviewImageUrl(nextPreviewFileUrlObj);
+      const nextPreviewFileUrl = URL.createObjectURL(nextPreviewFileUrlObj);
       console.log('next preview file', nextPreviewFileUrl);
       setPreviewFileUrl(nextPreviewFileUrl);
       setFile(nextPreviewFileUrlObj);

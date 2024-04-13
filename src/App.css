@@ -21,6 +21,9 @@ header, footer {
 }
 
 footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
   min-height: 2rem;
 }
 
@@ -28,6 +31,23 @@ main {
   flex-grow: 1;
   background-color: rgb(45, 45, 33);
   padding: 1rem;
+}
+
+.narrow-label-input {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.narrow-label-input > label {
+  min-width: max-content;
+  height: 100%;
+}
+
+.narrow-label-input > input {
+  height: 100%;
+  /* width: 50%; */
 }
 
 .adjustment-area {
@@ -55,4 +75,17 @@ button.caution {
 
 button.go {
   background-color: var(--go-color);
+}
+
+.busy-indicator {
+  position: fixed;
+  bottom: 0.25rem;
+  right: 0.25rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: none;
+}
+
+.busy-indicator.visible {
+  display: block;
 }
