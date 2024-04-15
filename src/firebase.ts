@@ -53,15 +53,8 @@ const resetUI = () => {
 }
 
 const writeUserSitePreferences = async (siteId: string, newPreferencesObj: object) => {
-  console.warn('firebase.ts.writeUserSitePreferences', siteId, newPreferencesObj)
-  try {
-    const result = await set(ref(database, `sites/${siteId}/userContent/prod`), newPreferencesObj);
-    console.log('Save operation was successful.', result);
-    return true;
-  } catch (error) {
-    console.error('Save operation failed:', error);
-    return false;
-  }
+  console.warn('firebase.ts.writeUserSitePreferences', siteId, newPreferencesObj);
+  await set(ref(database, `sites/${siteId}/userContent/prod`), newPreferencesObj);
 }
 
 const writeUserImageData = async (siteId: string, sectionPath: string, newImageDataObj: { fileName: string }) => {
@@ -77,10 +70,10 @@ const writeUserImageData = async (siteId: string, sectionPath: string, newImageD
   }
 }
 
-const writeUserSiteAttribute = (siteId: string, path: string | '', newAttributeKey: string, newAttributeValue: string) => {
+const writeUserSiteAttribute = async (siteId: string, path: string | '', newAttributeKey: string, newAttributeValue: string) => {
   const dbUrl = `sites/${siteId}/userContent/test${path ? `/${path}` : ''}/${newAttributeKey}`;
   console.log('dbUrl', dbUrl, 'adding', newAttributeValue);
-  set(ref(database, dbUrl), newAttributeValue);
+  await set(ref(database, dbUrl), newAttributeValue);
 }
 
 const saveUserSiteAttribute = (siteId: string, newAttributeKey: string, newAttributeValue: string) => {
@@ -118,9 +111,9 @@ const getUserSiteList = async (userId: string) => {
   }
 }
 
-const getUserSitePreferences = async (siteId: string) => {
+const getUserSitePreferences = async (siteId: string, production?: boolean | false) => {
   const dbRef = ref(getDatabase());
-  const snapshot = await get(child(dbRef, `sites/${siteId}/userContent/test`));
+  const snapshot = await get(child(dbRef, `sites/${siteId}/userContent/${production ? 'prod' : 'test'}`));
   if (snapshot.exists()) {
     return snapshot.val();
   } else {

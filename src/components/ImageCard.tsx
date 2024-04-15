@@ -17,6 +17,7 @@ const ImageCard = ({ imageObj, reportLoaded, onClickDelete, onClickSaveImageChan
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const onImageLoad = (imageName: string) => {
+    console.log(imageName, 'loaded!')
     setLoaded(true);
     reportLoaded(imageName);
   };
@@ -43,13 +44,10 @@ const ImageCard = ({ imageObj, reportLoaded, onClickDelete, onClickSaveImageChan
     const currentRaw = JSON.stringify({ ...currentValues });
     const initialRaw = JSON.stringify({ ...initialValues });
     if (currentRaw !== initialRaw) {
-      // if (currentValues !== initialValues ) {
-      console.error('no match!', currentRaw, initialRaw)
       if (!hasUnsavedChanges) {
         setHasUnsavedChanges(true);
       }
     } else {
-      console.warn('matched!', currentRaw, initialRaw)
       setHasUnsavedChanges(false);
     }
     

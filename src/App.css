@@ -89,3 +89,12 @@ button.go {
 .busy-indicator.visible {
   display: block;
 }
+
+.save-button {
+  transition: all 200ms ease;
+}
+
+.save-button:disabled {
+  background-color: rgb(80, 78, 78);
+  color: rgb(163, 157, 157, 0.5);
+}

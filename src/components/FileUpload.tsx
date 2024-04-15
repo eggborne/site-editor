@@ -36,6 +36,7 @@ const FileUpload: FC<FileUploadProps> = ({ publishFile, sectionPath }) => {
       URL.revokeObjectURL(previewFileUrl);
       setPreviewFileUrl('');
       publishFile(newPublishObj, sectionPath);
+      setFile(null);
     }
   }
 

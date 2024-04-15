@@ -1,20 +1,15 @@
 {
   "rules": {
-    "clients": {
-      "$userId": {
-        ".read": "$userId === auth.uid",
-        ".write": "$userId === auth.uid"
-      }
-    },
     "sites": {
-      ".read": "auth != null",
+      ".read": true,
       "$siteId": {
-        ".write": "auth != null",
-        "test": {
-          ".read": true
-        },
-        "prod": {
-          ".read": true
+        "userContent": {
+          "prod": {
+            ".write": "auth != null && root.child('sites').child($siteId).child('authorizedUsers').child(auth.uid).exists()"
+          },
+          "test": {
+            ".write": "auth != null && root.child('sites').child($siteId).child('authorizedUsers').child(auth.uid).exists()"
+          }
         }
       }
     }

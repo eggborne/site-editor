@@ -338,7 +338,6 @@ function App() {
   const [savedUserValues, setSavedUserValues] = useState({} as userValuesData)
   const [userValues, setUserValues] = useState({} as userValuesData)
   const [currentSite, setCurrentSite] = useState({ siteId: '', siteName: '', siteUrl: '' });
-  const [currentCSSValues, setCurrentCSSValues] = useState({} as CSSPropertiesState);
   const [databaseBusy, setDatabaseBusy] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [siteStorage, setSiteStorage] = useState(null as any);
@@ -379,14 +378,20 @@ function App() {
     if (currentUser && !databaseBusy) {
       console.log('CLICKED SAVE TO SAVE ---->', userValues);
       setDatabaseBusy(true);
-      const saved = await writeUserSitePreferences(currentSite.siteId, userValues);
-      if (saved) {
-        setDatabaseBusy(false);
-        setJustSaved(true);
-        setTimeout(() => {
-          setJustSaved(false);
-        }, 2000);
+      try {
+        await writeUserSitePreferences(currentSite.siteId, userValues);
+        const nextSavedUserValues = await getUserSitePreferences(currentSite.siteId, true);
+        const changed = JSON.stringify(savedUserValues) !== JSON.stringify(nextSavedUserValues);
+        console.log('changed?', changed)
+        setSavedUserValues(nextSavedUserValues);
+      } catch (error) {
+        console.error('Save error:', error);
       }
+      setDatabaseBusy(false);
+      setJustSaved(true);
+      setTimeout(() => {
+        setJustSaved(false);
+      }, 1200);
     }
   }
 
@@ -396,27 +401,43 @@ function App() {
     resetUI();
   }
 
-  const handleClickSite = (e: any) => {
+  const handleClickSite = async (e: any) => {
     const nextSite: any = siteList.find((site: any) => site.siteId === e.target.id);
     setCurrentSite(nextSite);
     const storageRef = ref(storage, 'sites/' + nextSite.siteId + '/images');
     console.log('storageRef', storageRef)
     setSiteStorage(storageRef);
+    const nextSavedUserValues = await getUserSitePreferences(nextSite.siteId, true);
+    setSavedUserValues(nextSavedUserValues);
+    setUserValues(nextSavedUserValues);
   }
 
-  const handleChangeProperty = (path: string, name: string, value: string) => {
-    const nextCSSValues = { ...currentCSSValues, [name]: value };
-    console.warn('----- setting nextCSSValues', nextCSSValues);
-    setCurrentCSSValues(nextCSSValues);
-    currentUser && writeUserSiteAttribute(currentSite.siteId, path, name, value);
+  const handleChangeProperty = async (path: string, name: string, value: string) => {
+    let nextUserValues = { ...userValues };
+    if (path === 'cssPreferences') {
+      const nextPrefs = { ...nextUserValues.cssPreferences, [name]: value };
+      nextUserValues.cssPreferences = nextPrefs;
+    } else {
+      nextUserValues = { ...userValues, [name]: value };
+    }
+    console.log('handleChangeProperty nextUserValues?', nextUserValues);
+    setUserValues(nextUserValues);
+    if (currentUser) {
+      setDatabaseBusy(true);
+      await writeUserSiteAttribute(currentSite.siteId, path, name, value);
+      setDatabaseBusy(false);
+    }
   }
 
   const getImageArray = async (siteImages: any) => {
     const imageArr: object[] = [];
     for (const image of siteImages) {
       console.log('doing image', image)
+      console.log('image.name', image.name);
       const imageRef = ref(siteStorage, image.name);
-      const imageDataRef = dbRef(database, `sites/${currentSite.siteId}/userContent/prod/images/${splitFileName(image.name)[0]}`);
+      const imageDbUrl = `sites/${currentSite.siteId}/userContent/test/images/${image.name.split('.')[0]}`;
+      console.log('imageDbUrl', imageDbUrl);
+      const imageDataRef = dbRef(database, imageDbUrl);
       const imageMetadata = await get(imageDataRef);
       console.log('imageMetadata', imageMetadata.val());
       // const url = await getDownloadURL(imageRef);
@@ -438,6 +459,7 @@ function App() {
   const publishFile = async ({ file, title, description, media, dimensions }: publishObj, sectionPath: string) => {
     const imageRef = ref(siteStorage, file.name);
     console.log('uploading file', file.name, 'to', imageRef);
+    setDatabaseBusy(true);
     await uploadBytesResumable(imageRef, file);
     const url = await getDownloadURL(imageRef);
     const size = file.size;
@@ -457,31 +479,38 @@ function App() {
     const savedResult = await writeUserImageData(currentSite.siteId, sectionPath, metadata);
     if (savedResult) {
       console.log('saved image data');
+      setDatabaseBusy(false);
       refreshSiteImages();
     } else {
       console.error('failed to save image data');
     }
+    return savedResult;
   }
 
   const refreshSiteImages = async () => {
     const result = await list(siteStorage);
-    const newImages = await getImageArray(result.items);
-    console.log('got newImages', newImages)
+    const newImages = await getImageArray(result.items) as any;
+    console.log('got newImages', newImages);
+    console.log('imaegs??', userValues.images)
     setSiteImages(newImages);
   }
 
   const deleteImage = async (imageWithExt: string) => {
     const imageRef = ref(siteStorage, imageWithExt);
-    const dataRef = dbRef(database, `sites/${currentSite.siteId}/userContent/prod/sections/0/images/${splitFileName(imageWithExt)[0]}`);
+    const prodDataRef = dbRef(database, `sites/${currentSite.siteId}/userContent/prod/images/${splitFileName(imageWithExt)[0]}`);
+    const testDataRef = dbRef(database, `sites/${currentSite.siteId}/userContent/test/images/${splitFileName(imageWithExt)[0]}`);
+    setDatabaseBusy(true);
     await deleteObject(imageRef);
-    await remove(dataRef);
+    await remove(prodDataRef);
+    await remove(testDataRef);
+    setDatabaseBusy(false);
     await refreshSiteImages();
   };
 
   const updateSectionData = async (newSectionData: any, sectionNumber: number) => {
     Object.entries(newSectionData).forEach(async ([key, value]) => {
       console.log('writing', key, value)
-      writeUserSiteAttribute(currentSite.siteId, `sections/${sectionNumber}`, key, value as string);
+      await writeUserSiteAttribute(currentSite.siteId, `sections/${sectionNumber}`, key, value as string);
     });
     const nextUserValues = { ...userValues };
     nextUserValues.sections[sectionNumber] = newSectionData;
@@ -504,13 +533,13 @@ function App() {
     getPrefs();
   }, [currentSite]);
 
-  // const cssVariables = Object.entries(currentCSSValues).filter(prop => prop[0].indexOf('--') === 0);
-  const cssVariables = Object.entries(currentCSSValues)[0];
+  const cssVariables = userValues.cssPreferences ? Object.entries(userValues.cssPreferences) : [];
 
   const cssData: Record<string, string> = {};
-
-  for (let [itemKey, itemValue] of Object.entries(currentCSSValues)) {
-    cssData[itemKey] = itemValue;
+  if (userValues.cssPreferences) {
+    for (let [itemKey, itemValue] of Object.entries(userValues.cssPreferences)) {
+      cssData[itemKey] = itemValue;
+    }
   }
 
   return (
@@ -564,7 +593,7 @@ function App() {
         }
       </main>
       <footer>
-        {currentSite.siteId && <button onClick={handleClickSave} type='button'>SAVE IT FOR REAL</button>}
+        {currentSite.siteId && <button className='save-button' disabled={databaseBusy || JSON.stringify(savedUserValues) === JSON.stringify(userValues)} onClick={handleClickSave} type='button'>SAVE IT FOR REAL</button>}
       </footer>
       <ToastModal message={`
       Saved!

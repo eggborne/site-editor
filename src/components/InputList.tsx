@@ -1,5 +1,5 @@
 
-import { ChangeEvent, FC } from 'react';
+import { FC } from 'react';
 import './InputList.css';
 
 const fontOptions = [
@@ -28,13 +28,12 @@ interface InputListProps {
 
 const InputList: FC<InputListProps> = ({ propertiesKey, cssData, handleChangeProperty }) => {
 
-  const handleInputChange = (event: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLSelectElement>) => {
+  const handleInputChange = (event: any) => {
     let { name, value } = event.target;
     propertiesKey[name].unit && (value += propertiesKey[name].unit);
-    console.warn('handleInputchange changing', name, 'to', value)
     handleChangeProperty('cssPreferences', name, value);
   };
-  
+
   return (
     <div className={'input-list'}>
       <h2>Colors / Sizes</h2>
@@ -51,15 +50,26 @@ const InputList: FC<InputListProps> = ({ propertiesKey, cssData, handleChangePro
                 })}
               </select>
               :
-              <input
-                defaultValue={property.unit ? parseInt(value).toString() : value}
-                type={property.type}
-                min={property.min}
-                max={property.max}
-                step={property.step}
-                name={key}
-                onChange={handleInputChange}
-              />
+              key.includes('animation-duration') ?
+                <input
+                  defaultValue={property.unit ? parseInt(value).toString() : value}
+                  type={property.type}
+                  min={property.min}
+                  max={property.max}
+                  step={property.step}
+                  name={key}
+                  onPointerUp={handleInputChange}
+                />
+                :
+                <input
+                  defaultValue={property.unit ? parseInt(value).toString() : value}
+                  type={property.type}
+                  min={property.min}
+                  max={property.max}
+                  step={property.step}
+                  name={key}
+                  onChange={handleInputChange}
+                />
             }
           </div>
         )
