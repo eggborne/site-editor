@@ -25,4 +25,4 @@ dist-ssr
 src/scripts/php/.htaccess
 
 # Environment Variables
-.env*.local
+.env
