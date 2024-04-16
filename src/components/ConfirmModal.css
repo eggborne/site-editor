@@ -1,8 +1,8 @@
-.toast-modal {
+.confirm-modal {
   width: 20rem;
-  height: 10rem;
-  background: rgb(30, 106, 32);
+  background: rgb(36, 42, 5);
   color: rgb(238, 224, 131);
+  border: 0.5rem solid red;
   padding: 1rem;
   border-radius: 0.5rem;
   box-shadow: 0 0 1rem 0.5rem rgba(0, 0, 0, 0.5);
@@ -16,12 +16,20 @@
   pointer-events: none;
 }
 
-.toast-modal:not(.visible) {
+.confirm-modal:not(.visible) {
   opacity: 0;
   scale: 0.9;
+}
+
+.confirm-modal:not(.visible) button {
+  pointer-events: none;
 }
 
 p {
   font-size: 1.25rem;
   text-align: center;
+}
+
+.confirm-modal > button {
+  font-size: 1rem;
 }

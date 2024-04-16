@@ -2,6 +2,7 @@ import * as firebaseui from 'firebaseui';
 import { initializeApp } from "firebase/app";
 import { EmailAuthProvider, GithubAuthProvider, GoogleAuthProvider, getAuth } from 'firebase/auth';
 import { child, get, getDatabase, ref, set } from "firebase/database";
+import { imageDataObj } from './App';
 // import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
@@ -57,7 +58,7 @@ const writeUserSitePreferences = async (siteId: string, newPreferencesObj: objec
   await set(ref(database, `sites/${siteId}/userContent/prod`), newPreferencesObj);
 }
 
-const writeUserImageData = async (siteId: string, sectionPath: string, newImageDataObj: { fileName: string }) => {
+const writeUserImageData = async (siteId: string, newImageDataObj: imageDataObj) => {
   try {
     const imageTargetUrl = `sites/${siteId}/userContent/test/images/${newImageDataObj.fileName}`;
     console.warn('writeUserImageData', imageTargetUrl, newImageDataObj)

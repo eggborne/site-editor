@@ -65,8 +65,12 @@ main {
   transform: translate(-50%, -50%);
 }
 
-h3 {
+h3, h4 {
   text-align: center;
+}
+
+button.stop {
+  background-color: var(--stop-color);
 }
 
 button.caution {
@@ -90,11 +94,12 @@ button.go {
   display: block;
 }
 
-.save-button {
+.save-button, .restore-button {
   transition: all 200ms ease;
+  color: rgb(51, 49, 49);
 }
 
-.save-button:disabled {
+button:disabled {
   background-color: rgb(80, 78, 78);
   color: rgb(163, 157, 157, 0.5);
 }

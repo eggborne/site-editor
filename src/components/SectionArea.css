@@ -66,3 +66,31 @@ textarea {
   flex-wrap: wrap;
   gap: 1rem;
 }
+
+.image-display .image-container {
+  position: relative;
+  height: 100px;
+  width: auto;
+  padding: 0;
+}
+
+img.thumbnail {
+  height:100%;
+  width: auto;
+  pointer-events: all;
+}
+
+button.image-delete-button {
+  position: absolute;
+  font-size: 0.75rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  top: 0;
+  right: 0;
+  margin: 0 !important;
+  border-radius: 0;
+  background-color: red;
+  color: #ecff83;
+  opacity: 0.75;
+}

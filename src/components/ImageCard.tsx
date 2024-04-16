@@ -5,11 +5,12 @@ interface ImageCardProps {
   imageObj: any;
   reportLoaded: (imageName: string) => void;
   onChangeImageAttribute: (imageObj: any) => void;
-  onClickSaveImageChanges: (imageObj: any) => void;
+  onClickDoneEditingImage: (imageObj: any) => void;
   onClickDelete: (imageFileName: string) => void;
+  onClickCancel: () => void;
 }
 
-const ImageCard = ({ imageObj, reportLoaded, onClickDelete, onClickSaveImageChanges }: ImageCardProps) => {
+const ImageCard = ({ imageObj, reportLoaded, onChangeImageAttribute, onClickDoneEditingImage, onClickCancel }: ImageCardProps) => {
 
   const [initialValues, setInitialValues] = useState({ ...imageObj });
   const [currentValues, setCurrentValues] = useState({ ...imageObj });
@@ -24,16 +25,12 @@ const ImageCard = ({ imageObj, reportLoaded, onClickDelete, onClickSaveImageChan
 
   const handleChange = ({ target }: any) => {
     const keyPath = target.name;
-    const nextValues = (keyPath === 'width' || keyPath === 'height') ?
-      { ...currentValues, dimensions: { ...currentValues.dimensions, [keyPath]: parseInt(target.value) } }
+    const nextValues = (keyPath === 'width' || keyPath === 'height' || keyPath === 'unit') ?
+      { ...currentValues, dimensions: { ...currentValues.dimensions, [keyPath]: keyPath === 'unit' ? target.value : parseInt(target.value) } }
       :
       { ...currentValues, [keyPath]: target.value };
     setCurrentValues(nextValues);
-  }
-
-  const handleClickDelete = ({ target: { id } }: any) => {
-    const actualFileName = id.split('-').join('.');
-    onClickDelete(actualFileName);
+    onChangeImageAttribute(nextValues);
   }
 
   useEffect(() => {
@@ -57,41 +54,52 @@ const ImageCard = ({ imageObj, reportLoaded, onClickDelete, onClickSaveImageChan
 
   return (
     <div key={fileName + '-card'} className={'image-card' + (hasUnsavedChanges ? ' unsaved' : '')}>
+      <h3>Editing {fileName}.{extension} ({size})</h3>
       <img className='preview-image' src={url} alt={fileName} onLoad={() => onImageLoad(fileName)} />
-      {loaded && (
+      {loaded ? (
         <>
           <div className='image-label file-name'>{fileName}.{extension}</div>
           <div className='image-label'>{size}</div>
+          <label htmlFor={fileName + '-title'}>Title</label>
           <input
             id={fileName + '-label-input'}
             name='title'
             type="text"
             defaultValue={title}
             onChange={(e) => handleChange(e)}
-            // placeholder="Title"
             className='image-label-input'
           />
+          <label htmlFor={fileName + '-description'}>Description</label>
           <textarea
             id={fileName + '-description-input'}
             name='description'
             defaultValue={description}
             onChange={(e) => handleChange(e)}
-            placeholder="Description"
             className='image-description-input'
           />
-          <input id={fileName + '-media-input'} type='text' defaultValue={media} placeholder='Media' />
+          <label htmlFor={fileName + '-media'}>Media</label>
+          <input onChange={(e) => handleChange(e)} name='media' id={fileName + '-media-input'} type='text' defaultValue={media} placeholder='Media' />
           <div className='dimensions-area'>
             <label htmlFor={fileName + '-width'}>Width</label>
             <input onChange={(e) => handleChange(e)} id={fileName + '-width'} name='width' type='number' defaultValue={dimensions.width} placeholder='Width' className='image-width-input' />
             <label htmlFor={fileName + '-height'}>Height</label>
             <input onChange={(e) => handleChange(e)} id={fileName + '-height'} name='height' type='number' defaultValue={dimensions.height} placeholder='Height' className='image-height-input' />
+            <label htmlFor='image-unit'>Unit</label>
+            <select onChange={(e) => handleChange(e)} id={fileName + '-unit'} name='unit'>
+              <option>in.</option>
+              <option>px</option>
+            </select>
           </div>
           <div className='edit-controls'>
-            <button onClick={() => onClickSaveImageChanges(currentValues)} disabled={!hasUnsavedChanges} className='image-save-button'>Save Changes</button>
+            <button onClick={onClickCancel} className='caution'>Cancel</button>
+            <button
+              onClick={() => onClickDoneEditingImage(currentValues)} disabled={!hasUnsavedChanges} className='image-save-button'>Done</button>
           </div>
-          <button onClick={handleClickDelete} id={fileName + '-' + extension} className='image-delete-button'>X</button>
         </>
-      )}
+      )
+        :
+      <h3>loading...</h3>
+    }
     </div>
   );
 }

@@ -12,45 +12,6 @@ import { deleteObject, getDownloadURL, getMetadata, list, ref, uploadBytesResuma
 import { get, ref as dbRef, remove } from 'firebase/database';
 import BusyIndicator from './components/BusyIndicator';
 
-// window.addEventListener('DOMContentLoaded', startUI);
-
-export interface CSSPropertiesState {
-  '--main-bg-color': string;
-  '--main-font-color': string;
-  '--main-font-size': string;
-  '--header-bg-color': string;
-  '--nav-area-bg-color': string;
-  '--nav-area-font-color': string;
-  '--nav-area-font': string;
-  '--nav-area-font-size': string;
-  '--hamburger-size': string;
-  '--main-padding-horiz': string;
-  '--main-padding-vert': string;
-  '--nav-padding-horiz': string;
-  '--nav-padding-vert': string;
-  '--header-height': string;
-  '--title-font': string;
-  '--main-font': string;
-  '--footer-height': string;
-  '--nav-text-shadow-x': string;
-  '--nav-text-shadow-y': string;
-  '--nav-text-shadow-blur': string;
-  '--nav-text-shadow-color': string;
-  '--text-accent-color': string;
-  '--hamburger-animation-duration': string;
-  '--hamburger-color': string;
-  '--hamburger-line-color': string;
-  '--hamburger-line-thickness': string;
-  '--hamburger-on-color': string;
-  '--hamburger-roundness': string;
-  '--logo-size': string;
-  '--logo-color': string;
-  '--title-font-size': string;
-  '--title-font-color': string;
-  'sections': object;
-  'images': object;
-}
-
 export interface userCSSData {
   '--main-bg-color': string;
   '--main-font-color': string;
@@ -86,6 +47,32 @@ export interface userCSSData {
   '--title-font-color': string;
 }
 
+export interface imageDataObj {
+  description: string;
+  dimensions: {
+    width: number;
+    height: number;
+    unit: string;
+  };
+  extension: string;
+  fileName: string;
+  media: string;
+  size: number;
+  title: string;
+  url: string;
+}
+
+export interface imagePublishObj {
+  description: string;
+  dimensions: {
+    width: number;
+    height: number;
+    unit: string;
+  };
+  media: string;
+  title: string;
+}
+
 interface SectionData {
   id: string;
   label: string;
@@ -96,7 +83,7 @@ interface SectionData {
 interface userValuesData {
   cssPreferences: userCSSData;
   sections: SectionData[];
-  images: object;
+  images: Record<string, imageDataObj>;
   title: string;
 }
 
@@ -322,14 +309,6 @@ const propertiesKey = {
   },
 };
 
-export interface publishObj {
-  file: File;
-  title: string;
-  description: string;
-  media: string;
-  dimensions: Record<string, number>;
-}
-
 function App() {
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -372,6 +351,11 @@ function App() {
       setUserValues(prefs);
       setLoading(false);
     }
+  }
+
+  const restoreSaved = async () => {
+    const restoredValues = await getUserSitePreferences(currentSite.siteId, true);
+    setUserValues(restoredValues);
   }
 
   const handleClickSave = async () => {
@@ -456,7 +440,8 @@ function App() {
       : [fileName, ''];
   }
 
-  const publishFile = async ({ file, title, description, media, dimensions }: publishObj, sectionPath: string) => {
+  const publishFile = async (file: File, newImageObj: imagePublishObj) => {
+    const { title, description, dimensions, media } = newImageObj;
     const imageRef = ref(siteStorage, file.name);
     console.log('uploading file', file.name, 'to', imageRef);
     setDatabaseBusy(true);
@@ -464,19 +449,22 @@ function App() {
     const url = await getDownloadURL(imageRef);
     const size = file.size;
     const splitFileNameArr = splitFileName(file.name);
-    console.log('splitFileNameArr', splitFileNameArr);
-    const metadata = {
-      fileName: splitFileNameArr[0],
+    const metadata: imageDataObj = {
+      description: description || 'Sample Description',
+      dimensions: {
+        width: dimensions.width || 1,
+        height: dimensions.height || 1,
+        unit: dimensions.unit || '',
+      },
       extension: splitFileNameArr[1],
-      url,
+      fileName: splitFileNameArr[0],
+      media: media || 'Sample Media',
       size,
       title: title || 'Sample Title',
-      description: description || 'Sample Description',
-      media: media || 'Sample Media',
-      dimensions: dimensions.width ? { ...dimensions } : { width: 1, height: 1 },
+      url,
     };
     console.log('writing image data', metadata)
-    const savedResult = await writeUserImageData(currentSite.siteId, sectionPath, metadata);
+    const savedResult = await writeUserImageData(currentSite.siteId, metadata);
     if (savedResult) {
       console.log('saved image data');
       setDatabaseBusy(false);
@@ -496,15 +484,20 @@ function App() {
   }
 
   const deleteImage = async (imageWithExt: string) => {
+    console.log('deleting image', imageWithExt)
     const imageRef = ref(siteStorage, imageWithExt);
-    const prodDataRef = dbRef(database, `sites/${currentSite.siteId}/userContent/prod/images/${splitFileName(imageWithExt)[0]}`);
     const testDataRef = dbRef(database, `sites/${currentSite.siteId}/userContent/test/images/${splitFileName(imageWithExt)[0]}`);
     setDatabaseBusy(true);
     await deleteObject(imageRef);
-    await remove(prodDataRef);
     await remove(testDataRef);
-    setDatabaseBusy(false);
+    try {
+      const prodDataRef = dbRef(database, `sites/${currentSite.siteId}/userContent/prod/images/${splitFileName(imageWithExt)[0]}`);
+      await remove(prodDataRef);
+    } catch (error) {
+      console.error('not in prod!', error);
+    }
     await refreshSiteImages();
+    setDatabaseBusy(false);
   };
 
   const updateSectionData = async (newSectionData: any, sectionNumber: number) => {
@@ -516,6 +509,19 @@ function App() {
     nextUserValues.sections[sectionNumber] = newSectionData;
     console.log('nextUserValues?', nextUserValues);
     setUserValues(nextUserValues);
+  }
+
+  const updateImageData = (imageObj: imageDataObj) => {
+    console.log('updateImageData received changed imageObj', imageObj);
+    console.log('userValues', userValues);
+    const nextUserValues = { ...userValues };
+    const nextImages = { ...nextUserValues.images } as Record<string, imageDataObj>;
+    nextImages[imageObj.fileName] = imageObj;
+    nextUserValues.images = nextImages;
+    console.log('changed to', nextUserValues);
+    setUserValues(nextUserValues);
+    writeUserImageData(currentSite.siteId, imageObj);
+    refreshSiteImages();
   }
 
   useEffect(() => {
@@ -540,6 +546,13 @@ function App() {
     for (let [itemKey, itemValue] of Object.entries(userValues.cssPreferences)) {
       cssData[itemKey] = itemValue;
     }
+  }
+
+  const unsavedChanges = JSON.stringify(savedUserValues) != JSON.stringify(userValues);
+
+  if (unsavedChanges) {
+    console.log('unsaved!');
+    console.log(savedUserValues, userValues);
   }
 
   return (
@@ -573,6 +586,8 @@ function App() {
                     publishFile={publishFile}
                     updateSectionData={updateSectionData}
                     deleteImage={deleteImage}
+                    updateImageData={updateImageData}
+                    refreshSiteImages={refreshSiteImages}
                   />
                   <InputList
                     propertiesKey={propertiesKey}
@@ -593,7 +608,12 @@ function App() {
         }
       </main>
       <footer>
-        {currentSite.siteId && <button className='save-button' disabled={databaseBusy || JSON.stringify(savedUserValues) === JSON.stringify(userValues)} onClick={handleClickSave} type='button'>SAVE IT FOR REAL</button>}
+        {currentSite.siteId &&
+          <>
+            <button className='restore-button caution' disabled={databaseBusy || !unsavedChanges} onClick={restoreSaved} type='button'>Restore Saved</button>
+            <button className='save-button' disabled={databaseBusy || !unsavedChanges} onClick={handleClickSave} type='button'>SAVE IT FOR REAL</button>
+          </>
+        }
       </footer>
       <ToastModal message={`
       Saved!
