@@ -64,11 +64,11 @@ const SectionArea: FC<SectionAreaProps> = ({ sections, siteImages, currentSiteId
           <div className="section-control" key={key}>
             <div className='section-text-input'>
               <label htmlFor={`section-label-${key}`}>Section label</label>
-              <input onChange={(e) => handleChange(e, parseInt(key))} id={`section-label-${key}`} name="label" type="text" value={label}></input>
+              <input autoComplete="off" onChange={(e) => handleChange(e, parseInt(key))} id={`section-label-${key}`} name="label" type="text" value={label}></input>
             </div>
             <div className='section-text-input large-text'>
               <label htmlFor={`contents-${key}`}>Contents</label>
-              <textarea onChange={(e) => handleChange(e, parseInt(key))} id={`contents-${key}`} name="textContent" value={textContent}></textarea>
+              <textarea autoComplete="off" onChange={(e) => handleChange(e, parseInt(key))} id={`contents-${key}`} name="textContent" value={textContent}></textarea>
             </div>
             {key === '0' &&
               <div className='image-upload'>

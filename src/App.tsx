@@ -11,6 +11,8 @@ import { storage } from './firebase_storage';
 import { deleteObject, getDownloadURL, getMetadata, list, ref, uploadBytesResumable } from 'firebase/storage';
 import { get, ref as dbRef, remove } from 'firebase/database';
 import BusyIndicator from './components/BusyIndicator';
+import { pause, propertiesKey } from './scripts/util';
+import LoadingBar from './components/LoadingBar';
 
 export interface userCSSData {
   '--main-bg-color': string;
@@ -87,227 +89,10 @@ interface userValuesData {
   title: string;
 }
 
-const propertiesKey = {
-  '--footer-height': {
-    label: 'Footer Height',
-    type: 'range',
-    min: 1,
-    max: 10,
-    step: 0.1,
-    unit: 'rem',
-  },
-  '--hamburger-animation-duration': {
-    label: 'Hamburger Animation Duration',
-    type: 'range',
-    min: 0,
-    max: 1000,
-    step: 1,
-    unit: 'ms',
-  },
-  '--hamburger-size': {
-    label: 'Hamburger Size',
-    type: 'range',
-    min: 1,
-    max: 10,
-    step: 0.1,
-    unit: 'rem',
-  },
-  '--header-bg-color': {
-    label: 'Header Background Color',
-    type: 'color',
-  },
-  '--header-height': {
-    label: 'Header Height',
-    type: 'range',
-    min: 1,
-    max: 10,
-    step: 0.1,
-    unit: 'rem',
-  },
-  '--main-bg-color': {
-    label: 'Main Background Color',
-    type: 'color',
-  },
-  '--main-font-color': {
-    label: 'Main Font Color',
-    type: 'color',
-  },
-  '--main-font-size': {
-    label: 'Main Font Size',
-    type: 'range',
-    min: 0.1,
-    max: 3.5,
-    step: 0.005,
-    unit: 'rem',
-  },
-  '--main-padding-horiz': {
-    label: 'Main Padding Horizontal',
-    type: 'range',
-    min: 0,
-    max: 10,
-    step: 0.1,
-    unit: 'rem',
-  },
-  '--main-padding-vert': {
-    label: 'Main Padding Vertical',
-    type: 'range',
-    min: 0,
-    max: 10,
-    step: 0.1,
-    unit: 'rem',
-  },
-  '--nav-area-bg-color': {
-    label: 'Nav Area Background Color',
-    type: 'color',
-  },
-  '--nav-area-width': {
-    label: 'Nav Area Width',
-    type: 'range',
-    min: 2,
-    max: 24,
-    step: 0.1,
-    unit: 'rem',
-  },
-  '--nav-area-font': {
-    label: 'Nav Area Font',
-    type: 'select',
-    options: ['Arial', 'Helvetica', 'sans-serif'],
-  },
-  '--nav-area-font-color': {
-    label: 'Nav Area Font Color',
-    type: 'color',
-  },
-  '--nav-area-font-size': {
-    label: 'Nav Area Font Size',
-    type: 'range',
-    min: 0.1,
-    max: 3.5,
-    step: 0.05,
-    unit: 'rem',
-  },
-  '--nav-padding-horiz': {
-    label: 'Nav Padding Horizontal',
-    type: 'range',
-    min: 0,
-    max: 10,
-    step: 0.1,
-    unit: 'rem',
-  },
-  '--nav-padding-vert': {
-    label: 'Nav Padding Vertical',
-    type: 'range',
-    min: 0,
-    max: 10,
-    step: 0.1,
-    unit: 'rem',
-  },
-  '--nav-text-shadow-x': {
-    label: 'Nav Text Shadow X',
-    type: 'range',
-    min: -2,
-    max: 2,
-    step: 0.05,
-    unit: 'rem',
-  },
-  '--nav-text-shadow-y': {
-    label: 'Nav Text Shadow Y',
-    type: 'range',
-    min: -2,
-    max: 2,
-    step: 0.05,
-    unit: 'rem',
-  },
-  '--nav-text-shadow-blur': {
-    label: 'Nav Text Shadow Blur',
-    type: 'range',
-    min: 0,
-    max: 1,
-    step: 0.05,
-    unit: 'rem',
-  },
-  '--nav-text-shadow-color': {
-    label: 'Nav Text Shadow Color',
-    type: 'color',
-  },
-  '--text-accent-color': {
-    label: 'Text Accent Color',
-    type: 'color',
-  },
-  '--title-font': {
-    label: 'Title Font',
-    type: 'select',
-    options: ['Arial', 'Helvetica', 'sans-serif'],
-  },
-  '--title-font-size': {
-    label: 'Title Font Size',
-    type: 'range',
-    min: 0.1,
-    max: 3.5,
-    step: 0.05,
-    unit: 'rem',
-  },
-  '--title-font-color': {
-    label: 'Title Font Color',
-    type: 'color',
-  },
-  '--main-font': {
-    label: 'Main Font',
-    type: 'select',
-    options: ['Arial', 'Helvetica', 'sans-serif'],
-  },
-  '--logo-size': {
-    label: 'Logo Size',
-    type: 'range',
-    min: 1,
-    max: 10,
-    step: 0.1,
-    unit: 'rem',
-  },
-  '--logo-color': {
-    label: 'Logo Color',
-    type: 'color',
-  },
-  '--hamburger-color': {
-    label: 'Hamburger Color',
-    type: 'color',
-  },
-  '--hamburger-line-color': {
-    label: 'Hamburger Line Color',
-    type: 'color',
-  },
-  '--hamburger-line-thickness': {
-    label: 'Hamburger Line Thickness',
-    type: 'range',
-    min: 0.1,
-    max: 1,
-    step: 0.01,
-    unit: 'rem',
-  },
-  '--hamburger-on-color': {
-    label: 'Hamburger On Color',
-    type: 'color',
-  },
-  '--hamburger-roundness': {
-    label: 'Hamburger Roundness',
-    type: 'range',
-    min: 0,
-    max: 50,
-    step: 0.5,
-    unit: '%'
-  },
-  '--section-heading-color': {
-    label: 'Section Heading Color',
-    type: 'color',
-  },
-  '--section-heading-font-size': {
-    label: 'Section Heading Font Size',
-    type: 'range',
-    min: 0.5,
-    max: 3.5,
-    step: 0.01,
-    unit: 'rem',
-  },
-};
+export interface uploadProgressData {
+  bytesSent: number;
+  bytesTotal: number;
+}
 
 function App() {
   const [ready, setReady] = useState(false);
@@ -321,6 +106,7 @@ function App() {
   const [justSaved, setJustSaved] = useState(false);
   const [siteStorage, setSiteStorage] = useState(null as any);
   const [siteImages, setSiteImages] = useState(null as any);
+  const [uploadProgress, setUploadProgress] = useState({} as uploadProgressData);
 
   const init = () => {
     auth.onAuthStateChanged(async (user: User | null) => {
@@ -354,8 +140,11 @@ function App() {
   }
 
   const restoreSaved = async () => {
-    const restoredValues = await getUserSitePreferences(currentSite.siteId, true);
+    // const restoredValues = await getUserSitePreferences(currentSite.siteId, true);
+    const restoredValues = { ...savedUserValues };
     setUserValues(restoredValues);
+    console.warn('sending', restoredValues)
+    await writeUserSitePreferences(currentSite.siteId, restoredValues, true);
   }
 
   const handleClickSave = async () => {
@@ -364,9 +153,8 @@ function App() {
       setDatabaseBusy(true);
       try {
         await writeUserSitePreferences(currentSite.siteId, userValues);
-        const nextSavedUserValues = await getUserSitePreferences(currentSite.siteId, true);
-        const changed = JSON.stringify(savedUserValues) !== JSON.stringify(nextSavedUserValues);
-        console.log('changed?', changed)
+        // const nextSavedUserValues = await getUserSitePreferences(currentSite.siteId, true);
+        const nextSavedUserValues = { ...userValues };
         setSavedUserValues(nextSavedUserValues);
       } catch (error) {
         console.error('Save error:', error);
@@ -388,12 +176,12 @@ function App() {
   const handleClickSite = async (e: any) => {
     const nextSite: any = siteList.find((site: any) => site.siteId === e.target.id);
     setCurrentSite(nextSite);
-    const storageRef = ref(storage, 'sites/' + nextSite.siteId + '/images');
+    // const storageRef = ref(storage, 'sites/' + nextSite.siteId + '/images');
+    const storageRef = ref(storage, `sites/${nextSite.siteId}/images/${currentUser?.uid}`);
     console.log('storageRef', storageRef)
     setSiteStorage(storageRef);
     const nextSavedUserValues = await getUserSitePreferences(nextSite.siteId, true);
     setSavedUserValues(nextSavedUserValues);
-    setUserValues(nextSavedUserValues);
   }
 
   const handleChangeProperty = async (path: string, name: string, value: string) => {
@@ -441,38 +229,60 @@ function App() {
   }
 
   const publishFile = async (file: File, newImageObj: imagePublishObj) => {
+    setDatabaseBusy(true);
     const { title, description, dimensions, media } = newImageObj;
     const imageRef = ref(siteStorage, file.name);
     console.log('uploading file', file.name, 'to', imageRef);
-    setDatabaseBusy(true);
-    await uploadBytesResumable(imageRef, file);
-    const url = await getDownloadURL(imageRef);
-    const size = file.size;
-    const splitFileNameArr = splitFileName(file.name);
-    const metadata: imageDataObj = {
-      description: description || 'Sample Description',
-      dimensions: {
-        width: dimensions.width || 1,
-        height: dimensions.height || 1,
-        unit: dimensions.unit || '',
+    const uploadTask = uploadBytesResumable(imageRef, file);
+
+    uploadTask.on('state_changed',
+      (snapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        console.log('Upload is ' + progress + '% done');
+        setUploadProgress({
+          bytesSent: snapshot.bytesTransferred,
+          bytesTotal: snapshot.totalBytes,        
+        });
       },
-      extension: splitFileNameArr[1],
-      fileName: splitFileNameArr[0],
-      media: media || 'Sample Media',
-      size,
-      title: title || 'Sample Title',
-      url,
-    };
-    console.log('writing image data', metadata)
-    const savedResult = await writeUserImageData(currentSite.siteId, metadata);
-    if (savedResult) {
-      console.log('saved image data');
-      setDatabaseBusy(false);
-      refreshSiteImages();
-    } else {
-      console.error('failed to save image data');
-    }
-    return savedResult;
+      (error) => {
+        console.error(error.code)
+      },
+      async () => {
+        // Upload completed successfully
+        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+        const size = file.size;
+        const splitFileNameArr = splitFileName(file.name);
+        const metadata: imageDataObj = {
+          description: description || 'Sample Description',
+          dimensions: {
+            width: dimensions.width || 1,
+            height: dimensions.height || 1,
+            unit: dimensions.unit || '',
+          },
+          extension: splitFileNameArr[1],
+          fileName: splitFileNameArr[0],
+          media: media || 'Sample Media',
+          size,
+          title: title || 'Sample Title',
+          url: downloadURL,
+        };
+        console.log('writing image data', metadata)
+        const savedResult = await writeUserImageData(currentSite.siteId, metadata);
+        if (savedResult) {
+          console.log('saved image data');
+          await pause(500);
+          setDatabaseBusy(false);
+          setUploadProgress({
+            bytesSent: 0,
+            bytesTotal: 0,
+          });
+          refreshSiteImages();
+        } else {
+          console.error('failed to save image data');
+        }
+        return savedResult;
+      }
+    );
   }
 
   const refreshSiteImages = async () => {
@@ -607,7 +417,7 @@ function App() {
           <LoginScreen visible={ready} />
         }
       </main>
-      <footer>
+      <footer className={unsavedChanges ? 'unsaved' : ''}>
         {currentSite.siteId &&
           <>
             <button className='restore-button caution' disabled={databaseBusy || !unsavedChanges} onClick={restoreSaved} type='button'>Restore Saved</button>
@@ -620,6 +430,7 @@ function App() {
       ${currentSite.siteUrl}
       `} visible={justSaved} />
       <BusyIndicator visible={databaseBusy} />
+      <LoadingBar progress={uploadProgress} visible={!!uploadProgress.bytesTotal} />
     </>
   )
 }

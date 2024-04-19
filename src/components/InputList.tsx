@@ -59,6 +59,7 @@ const InputList: FC<InputListProps> = ({ propertiesKey, cssData, handleChangePro
                   step={property.step}
                   name={key}
                   onPointerUp={handleInputChange}
+                  autoComplete='off'
                 />
                 :
                 <input
@@ -69,6 +70,7 @@ const InputList: FC<InputListProps> = ({ propertiesKey, cssData, handleChangePro
                   step={property.step}
                   name={key}
                   onChange={handleInputChange}
+                  autoComplete='off'
                 />
             }
           </div>

@@ -56,9 +56,9 @@ const resetUI = () => {
   startUI();
 }
 
-const writeUserSitePreferences = async (siteId: string, newPreferencesObj: object) => {
+const writeUserSitePreferences = async (siteId: string, newPreferencesObj: object, test?: boolean | false) => {
   console.warn('firebase.ts.writeUserSitePreferences', siteId, newPreferencesObj);
-  await set(ref(database, `sites/${siteId}/userContent/prod`), newPreferencesObj);
+  await set(ref(database, `sites/${siteId}/userContent/${test ? 'test' : 'prod'}`), newPreferencesObj);
 }
 
 const writeUserImageData = async (siteId: string, newImageDataObj: imageDataObj) => {

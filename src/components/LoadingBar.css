@@ -1,0 +1,43 @@
+.loading-bar {
+  position: fixed;
+  background-color: #000000dd;
+  width: 100vw;
+  height: 100dvh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #ffffff;
+  transition: all 500ms ease;
+}
+
+.loading-bar.hidden {
+  display: none;
+}
+
+.progress-indicator {
+  position: relative;
+  width: 90vmin;
+  height: 5rem;
+  background-color: gray;
+  outline: 2px solid black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.percent-label {
+  z-index: 1;
+}
+
+.progress-bar {
+  position: absolute; 
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background-color: green;
+  transform-origin: left;
+  transition: transform 200ms ease;
+}
