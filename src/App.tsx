@@ -1,18 +1,19 @@
 import { useEffect, useState } from 'react';
 import './App.css';
 import LoginScreen from './components/LoginScreen';
-import { auth, database, getUserSiteList, getUserSitePreferences, resetUI, saveUserSectionAttribute, startUI, writeUserImageData, writeUserSectionAttribute, writeUserSiteAttribute, writeUserSitePreferences } from './firebase';
+import { auth, database, getUserSiteList, getUserSitePreferences, resetUI, startUI, writeUserImageData, writeUserSiteAttribute, writeUserSitePreferences } from './firebase';
 import { User, signOut } from 'firebase/auth';
 import Header from './components/Header';
 import InputList from './components/InputList';
 import ToastModal from './components/ToastModal';
 import SectionArea from './components/SectionArea';
 import { storage } from './firebase_storage';
-import { deleteObject, getDownloadURL, getMetadata, list, ref, uploadBytesResumable } from 'firebase/storage';
+import { deleteObject, getDownloadURL, getMetadata, list, ref, uploadBytes, uploadBytesResumable } from 'firebase/storage';
 import { get, ref as dbRef, remove } from 'firebase/database';
 import BusyIndicator from './components/BusyIndicator';
 import { pause, propertiesKey } from './scripts/util';
 import LoadingBar from './components/LoadingBar';
+import ConfirmModal from './components/ConfirmModal';
 
 export interface userCSSData {
   '--main-bg-color': string;
@@ -59,9 +60,12 @@ export interface imageDataObj {
   extension: string;
   fileName: string;
   media: string;
+  series: string;
   size: number;
   title: string;
   url: string;
+  thumbnailUrl: string;
+  aspectRatio?: Number;
 }
 
 export interface imagePublishObj {
@@ -72,7 +76,9 @@ export interface imagePublishObj {
     unit: string;
   };
   media: string;
+  series: string;
   title: string;
+  aspectRatio: number;
 }
 
 interface SectionData {
@@ -107,6 +113,7 @@ function App() {
   const [siteStorage, setSiteStorage] = useState(null as any);
   const [siteImages, setSiteImages] = useState(null as any);
   const [uploadProgress, setUploadProgress] = useState({} as uploadProgressData);
+  const [confirmingRestore, setConfirmingRestore] = useState(false);
 
   const init = () => {
     auth.onAuthStateChanged(async (user: User | null) => {
@@ -145,6 +152,7 @@ function App() {
     setUserValues(restoredValues);
     console.warn('sending', restoredValues)
     await writeUserSitePreferences(currentSite.siteId, restoredValues, true);
+    location.reload();
   }
 
   const handleClickSave = async () => {
@@ -176,7 +184,6 @@ function App() {
   const handleClickSite = async (e: any) => {
     const nextSite: any = siteList.find((site: any) => site.siteId === e.target.id);
     setCurrentSite(nextSite);
-    // const storageRef = ref(storage, 'sites/' + nextSite.siteId + '/images');
     const storageRef = ref(storage, `sites/${nextSite.siteId}/images/${currentUser?.uid}`);
     console.log('storageRef', storageRef)
     setSiteStorage(storageRef);
@@ -228,11 +235,28 @@ function App() {
       : [fileName, ''];
   }
 
-  const publishFile = async (file: File, newImageObj: imagePublishObj) => {
+  const uploadThumbnail = async (thumbnailFile: File) => {
+    const storageRef = ref(siteStorage, `/thumbnails/${thumbnailFile.name}`);
+    try {
+      const snapshot = await uploadBytes(storageRef, thumbnailFile);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      console.log(`File uploaded at ${downloadURL}`);
+      return downloadURL;
+    } catch (error) {
+      console.error('Upload failed:', error);
+      throw new Error('Upload failed');
+    }
+  }
+
+  const publishFile = async (file: File, thumbnailFile: File, newImageObj: imagePublishObj) => {
     setDatabaseBusy(true);
-    const { title, description, dimensions, media } = newImageObj;
+    const { series, title, description, dimensions, media, aspectRatio } = newImageObj;
     const imageRef = ref(siteStorage, file.name);
     console.log('uploading file', file.name, 'to', imageRef);
+
+    const thumbnailUrl = await uploadThumbnail(thumbnailFile);
+    console.log('thumbnailUrl', thumbnailUrl);
+
     const uploadTask = uploadBytesResumable(imageRef, file);
 
     uploadTask.on('state_changed',
@@ -241,7 +265,7 @@ function App() {
         console.log('Upload is ' + progress + '% done');
         setUploadProgress({
           bytesSent: snapshot.bytesTransferred,
-          bytesTotal: snapshot.totalBytes,        
+          bytesTotal: snapshot.totalBytes,
         });
       },
       (error) => {
@@ -264,7 +288,10 @@ function App() {
           media: media || 'Sample Media',
           size,
           title: title || 'Sample Title',
+          series: series || '',
           url: downloadURL,
+          thumbnailUrl,
+          aspectRatio,
         };
         console.log('writing image data', metadata)
         const savedResult = await writeUserImageData(currentSite.siteId, metadata);
@@ -287,7 +314,7 @@ function App() {
 
   const refreshSiteImages = async () => {
     const result = await list(siteStorage);
-    const newImages = await getImageArray(result.items) as any;
+    const newImages = await getImageArray(result.items) as imageDataObj[];
     console.log('got newImages', newImages);
     console.log('imaegs??', userValues.images)
     setSiteImages(newImages);
@@ -296,13 +323,16 @@ function App() {
   const deleteImage = async (imageWithExt: string) => {
     console.log('deleting image', imageWithExt)
     const imageRef = ref(siteStorage, imageWithExt);
+    const imageThumbnailRef = ref(siteStorage, `thumbnails/thumbnail_${imageWithExt}`)
     const testDataRef = dbRef(database, `sites/${currentSite.siteId}/userContent/test/images/${splitFileName(imageWithExt)[0]}`);
     setDatabaseBusy(true);
+    await deleteObject(imageThumbnailRef);
     await deleteObject(imageRef);
     await remove(testDataRef);
     try {
       const prodDataRef = dbRef(database, `sites/${currentSite.siteId}/userContent/prod/images/${splitFileName(imageWithExt)[0]}`);
       await remove(prodDataRef);
+      console.error('REMOVED PROD IMAGE??')
     } catch (error) {
       console.error('not in prod!', error);
     }
@@ -420,15 +450,23 @@ function App() {
       <footer className={unsavedChanges ? 'unsaved' : ''}>
         {currentSite.siteId &&
           <>
-            <button className='restore-button caution' disabled={databaseBusy || !unsavedChanges} onClick={restoreSaved} type='button'>Restore Saved</button>
+            <button className='restore-button caution' disabled={databaseBusy || !unsavedChanges} onClick={() => setConfirmingRestore(true)} type='button'>Restore Saved</button>
             <button className='save-button' disabled={databaseBusy || !unsavedChanges} onClick={handleClickSave} type='button'>SAVE IT FOR REAL</button>
           </>
         }
       </footer>
-      <ToastModal message={`
-      Saved!
-      ${currentSite.siteUrl}
-      `} visible={justSaved} />
+      <ToastModal
+        message={`
+          Saved!
+          ${currentSite.siteUrl}
+        `} visible={justSaved}
+      />
+      <ConfirmModal
+        visible={confirmingRestore}
+        message={`Really restore everything to the last saved state? This will also reload the page.`}
+        confirmAction={async () => { await restoreSaved() }}
+        cancelAction={() => setConfirmingRestore(false)}
+      />
       <BusyIndicator visible={databaseBusy} />
       <LoadingBar progress={uploadProgress} visible={!!uploadProgress.bytesTotal} />
     </>

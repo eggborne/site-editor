@@ -126,10 +126,6 @@ const getUserSitePreferences = async (siteId: string, production?: boolean | fal
   }
 }
 
-// const analytics = getAnalytics(firebaseApp);
-
-
-
 export {
   auth,
   database,

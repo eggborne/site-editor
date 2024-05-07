@@ -3,14 +3,13 @@ import './ImageCard.css';
 
 interface ImageCardProps {
   imageObj: any;
-  reportLoaded: (imageName: string) => void;
   onChangeImageAttribute: (imageObj: any) => void;
   onClickDoneEditingImage: (imageObj: any) => void;
   onClickDelete: (imageFileName: string) => void;
   onClickCancel: () => void;
 }
 
-const ImageCard = ({ imageObj, reportLoaded, onChangeImageAttribute, onClickDoneEditingImage, onClickCancel }: ImageCardProps) => {
+const ImageCard = ({ imageObj, onChangeImageAttribute, onClickDoneEditingImage, onClickCancel }: ImageCardProps) => {
 
   const [initialValues, setInitialValues] = useState({ ...imageObj });
   const [currentValues, setCurrentValues] = useState({ ...imageObj });
@@ -20,7 +19,6 @@ const ImageCard = ({ imageObj, reportLoaded, onChangeImageAttribute, onClickDone
   const onImageLoad = (imageName: string) => {
     console.log(imageName, 'loaded!')
     setLoaded(true);
-    reportLoaded(imageName);
   };
 
   const handleChange = ({ target }: any) => {
@@ -30,6 +28,7 @@ const ImageCard = ({ imageObj, reportLoaded, onChangeImageAttribute, onClickDone
       :
       { ...currentValues, [keyPath]: target.value };
     setCurrentValues(nextValues);
+    console.log('settting nextValues', nextValues)
     onChangeImageAttribute(nextValues);
   }
 
@@ -50,7 +49,7 @@ const ImageCard = ({ imageObj, reportLoaded, onChangeImageAttribute, onClickDone
     
   }, [currentValues])
 
-  const { title, size, url, description, fileName, media, dimensions, extension } = imageObj;
+  const { series, title, size, url, description, fileName, media, dimensions, extension } = imageObj;
 
   return (
     <div key={fileName + '-card'} className={'image-card' + (hasUnsavedChanges ? ' unsaved' : '')}>
@@ -60,6 +59,15 @@ const ImageCard = ({ imageObj, reportLoaded, onChangeImageAttribute, onClickDone
         <>
           <div className='image-label file-name'>{fileName}.{extension}</div>
           <div className='image-label'>{size}</div>
+          <label htmlFor={fileName + '-series'}>Series</label>
+          <input
+            id={fileName + '-label-input'}
+            name='series'
+            type="text"
+            defaultValue={series}
+            onChange={(e) => handleChange(e)}
+            className='image-label-input'
+          />
           <label htmlFor={fileName + '-title'}>Title</label>
           <input
             id={fileName + '-label-input'}

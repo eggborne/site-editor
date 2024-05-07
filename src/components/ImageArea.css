@@ -1,0 +1,66 @@
+.image-area {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+h4 {
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.image-display {
+  max-width: 100%;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.image-display .image-container {
+  position: relative;
+  height: 100px;
+  width: auto;
+  padding: 0;
+}
+
+img.thumbnail {
+  height: 100%;
+  width: auto;
+  pointer-events: all;
+}
+
+button.image-delete-button {
+  position: absolute;
+  font-size: 0.75rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  top: 0;
+  right: 0;
+  margin: 0 !important;
+  border-radius: 0;
+  background-color: red;
+  color: #ecff83;
+  opacity: 0.75;
+}
+
+.image-section {
+  width: 100%;
+  outline: 2px solid #aaaaaa55;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  /* display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  justify-content: space-between; */
+}
+
+.image-series-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
